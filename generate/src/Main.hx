@@ -23,6 +23,7 @@
 	References
 		https://docs.microsoft.com/en-gb/typography/opentype/spec/ttch01
 		http://chanae.walon.org/pub/ttf/ttf_glyphs.htm
+
 **/
 @:enum abstract GPUTextFormat(String) {
 	var TEXTURE_ATLAS_FONT = 'TextureAtlasFont';
