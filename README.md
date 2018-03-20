@@ -8,6 +8,8 @@ Engine agnostic GPU text rendering
 - Complex layout demo
 	- Text of different fonts within a single layout
 - Document public methods
+- Binary format
+- Support more techniques
 
-<!-- Available techniques -->
-<!-- - MSDF -->
+Available techniques
+- MSDF
