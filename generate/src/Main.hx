@@ -111,29 +111,29 @@ class Main {
 
 		var showHelp = false;
 		var argHandler = hxargs.Args.generate([
-			@doc('Path of file containing character set)')
+			@doc('Path of file containing character set')
 			['--charset'] => (path: String) -> charsetPath = path,
 
 			@doc('List of characters')
 			['--charlist'] => (characters: String) -> charList = characters.split(''),
 
-			@doc('Sets the path of the output font file. External resources will be saved in the same directory)')
+			@doc('Sets the path of the output font file. External resources will be saved in the same directory')
 			['--output-dir', '-o'] => (path: String) -> fontOutputDirectory = path,
 
 			@doc('Font rendering technique, one of: msdf, sdf, bitmap')
 			['--technique'] => (name: String) -> technique = name,
 
 			// texture atlas mode options
-			@doc('Path of msdfgen executable)')
+			@doc('Path of msdfgen executable')
 			['--msdfgen'] => (path: String) -> msdfgenPath = path,
 
-			@doc('Maximum dimension of a glyph in pixels)')
+			@doc('Maximum dimension of a glyph in pixels')
 			['--size'] => (glyphSize: Int) -> size_px = glyphSize,
 
-			@doc('Specifies the width of the range around the shape between the minimum and maximum representable signed distance in pixels)')
+			@doc('Specifies the width of the range around the shape between the minimum and maximum representable signed distance in pixels')
 			['--pxrange'] => (range: Int) -> fieldRange_px = range,
 
-			@doc('Sets the maximum dimension of the texture atlas)')
+			@doc('Sets the maximum dimension of the texture atlas')
 			['--max-texture-size'] => (size: Int) -> maximumTextureSize = size,
 
 			// misc
