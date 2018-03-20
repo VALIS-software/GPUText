@@ -7,6 +7,7 @@
 	<style>
 		body {
 			font-family: helvetica, sans-serif;
+			margin: 0;
 		}
 
 		#error-log {
@@ -18,15 +19,36 @@
 			font-weight: bold;
 			font-size: 1.2em;
 		}
+
+		#settings {
+			position: absolute;
+			top: 20px;
+			left: 20px;
+			color: white;
+			user-select: none;
+			padding: 10px;
+			background: rgba(0, 0, 0, 0.6);
+		}
+
+		#settings .row label {
+			width: 100px;
+			display: inline-block;
+		}
 	</style>
 </head>
 <body>
 	<pre id="error-log"></pre>
-	<canvas width="1024px" height="768px"></canvas>
+	<canvas></canvas>
 
-	<div style="position: absolute; top: 20px; left: 20px; color: white; user-select: none;">
-		<label for="debug-mode">Debug Mode</label><input type="checkbox" id="debug-mode">
-		<label for="text-size">Size</label><input type="range" min="0" max="1" value="0.5" class="slider" id="text-size">
+	<div id="settings">
+		<div class="row">
+			<label for="text-size">Size</label>
+			<input type="range" min="0" max="1" value="0.5" class="slider" id="text-size">
+		</div>
+		<div class="row">
+			<label for="debug-mode">Show Quads</label>
+			<input type="checkbox" id="debug-mode">
+		</div>
 	</div>
 
 	<script src="../gputext.js"></script>
@@ -36,14 +58,19 @@
 		"use strict";
 		let canvas = document.querySelector('canvas');
 
-		// use full DPI of display
-		let devicePixelRatio = window.devicePixelRatio || 1;
-		canvas.width = Math.round(canvas.clientWidth * devicePixelRatio);
-		canvas.height = Math.round(canvas.clientHeight * devicePixelRatio);
-		canvas.style.width = (100 / devicePixelRatio) + '%';
-		canvas.style.height = (100 / devicePixelRatio) + '%';
+		function fitCanvas() {
+			// use full DPI of display
+			let devicePixelRatio = window.devicePixelRatio || 1;
+			canvas.width = Math.round(window.innerWidth * devicePixelRatio);
+			canvas.height = Math.round(window.innerHeight * devicePixelRatio);
+			canvas.style.width = canvas.width / devicePixelRatio + 'px';
+			canvas.style.height = canvas.height / devicePixelRatio + 'px';
+		}
 
-		let gl = canvas.getContext('webgl', {antialias: false});
+		fitCanvas();
+		window.addEventListener('resize', fitCanvas);
+
+		let gl = canvas.getContext('webgl', {antialias: true});
 
 		// app state
 		let textBuffer = null;
@@ -59,7 +86,6 @@
 
 		// initialize MSDF program
 		let msdfProgram = GPUTextWebGL.createTextProgram(gl, {});
-		// let fontName = 'Neuton-Regular';
 		let fontName = 'OpenSans-Regular';
 		// load font and generate text buffer
 		let font = null;
@@ -117,7 +143,7 @@
 
 		gl.enable(gl.CULL_FACE);
 
-		// premultiplied alpha blending
+		// premultiplied alpha blending is required when drawing msdf text
 		gl.enable(gl.BLEND);
 		gl.blendEquation(gl.FUNC_ADD);
 		gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -137,6 +163,8 @@
 			window.requestAnimationFrame(frameLoop);
 			const t = window.performance.now()/1000;
 
+			gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+
 			gl.clear(gl.COLOR_BUFFER_BIT);
 
 			// draw baseline
@@ -148,7 +176,6 @@
 			gl.vertexAttribPointer(msdfDebugProgram.attributeLocations.uv, 2, gl.FLOAT, false, 2 * 4, 0);
 			gl.drawArrays(gl.LINES, 0, 2);
 			
-
 			const r = gl.drawingBufferWidth / gl.drawingBufferHeight;
 			const s = debugSize.value;
 			const sx = s / r;
