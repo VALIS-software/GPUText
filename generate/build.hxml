@@ -1,0 +1,11 @@
+-main Main
+-cp src
+
+-lib console.hx:0.2.3
+-lib hxargs:3.0.2
+-lib format:3.4.0
+-lib pako:git:https://github.com/azrafe7/hxPako.git
+
+# node.js target
+-lib hxnodejs:git:https://github.com/HaxeFoundation/hxnodejs.git#4b20c1cf371e09b4a774ed331f50cbde7b818a4f
+-js font-atlas.js
