@@ -3,7 +3,7 @@
 Engine agnostic GPU text rendering
 
 ## Font Atlas Generator
-**Usage**
+##### Usage
 ```
 ['--charset'] <path>          : Path of file containing character set
 ['--charlist'] <characters>   : List of characters
@@ -17,26 +17,28 @@ Engine agnostic GPU text rendering
 _ <path>                      : Path of TrueType font file
 ```
 
-**Example**
+##### Example
 ```
 > node font-atlas.js source-fonts/OpenSans/OpenSans-Regular.ttf
 ```
 
-**Building**
-With haxe 4.0.0:
+##### Building
+Checkout the msdf gen submodule
+```
+git submodule init
+```
+Then with haxe 4.0.0:
 ```
 haxelib install build.hxml
 haxe build.hxml
 ```
 
-## Todo before public release
-- Manually generate signed distance atlas mipmaps (this improves quality at low font sizes)
-	- Store mipmap level in alpha and use to offset uvs to precise pixel coords
+## Release Todos
 - Complex layout demo
 	- Text of different fonts within a single layout
 - Document public methods
+- Manually generate signed distance atlas mipmaps (this improves quality at low font sizes)
+	- Store mipmap level in alpha and use to offset uvs to precise pixel coords
+- Support 3D anti-aliasing
+- Test with other libraries like three.js
 - Binary format
-- Support more techniques
-
-Available techniques
-- MSDF
