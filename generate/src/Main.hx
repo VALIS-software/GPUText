@@ -1,24 +1,22 @@
 /**
 
+	# GPUText Font Atlas Generator
+
 	Font units are normalized so that a value of 1 corresponds to the top of the 'em square' and 0 the bottom
 
 	Definitions
-		su = shape units
-		px = pixels
-		free type units = shape units * 64.0 (from https://github.com/Chlumsky/msdfgen/blob/master/ext/import-font.cpp)
-
-		<shape units> * metrics.scale = pixels
+		su
+			shape units, specific to msdfgen
+		FUnits
+			values directly stored in the truetype file
+		normalized units
+			FUnits / unitsPerEm, 0 corresponds to the bottom of the authoring 'em square' and 1, the top
 		
 		glyph bounds in pixels
-			(left + translateX) * scale
-			(right + translateX) * scale
-			image-height-px - (bottom + translateY) * scale
-			image-height-px - (bottom + translateY) * scale
-
-	File format layout:
-		[json]\0[payload-bytes]
-	
-		The null terminator and payload bytes may be omitted
+			(left + translateX) * atlasScale
+			(right + translateX) * atlasScale
+			glyph-height-px - (bottom + translateY) * atlasScale
+			glyph-height-px - (top + translateY) * atlasScale
 
 	References
 		https://docs.microsoft.com/en-gb/typography/opentype/spec/ttch01
@@ -31,28 +29,35 @@
 
 @:enum abstract TextureFontTechnique(String) from String {
 	var MSDF = 'msdf';
-	// var SDF = 'sdf';
-	// var BITMAP = 'bitmap';
+	var SDF = 'sdf';
+	var BITMAP = 'bitmap';
 }
 
-typedef ResourceReference = {	
+typedef ResourceReference = {
+	// range of bytes within the file's binary payload
 	?payloadByteRange: {
 		start: Int,
 		length: Int
 	},
-	?localPath: String, // path relative to font file
+
+	// path relative to font file
+	// an implementation should not allow resource paths to be in directories _above_ the font file
+	?localPath: String, 
 }
 
 typedef TextureAtlasGlyph = {
-	// these are normalized units, where 0 is bottom of the authoring 'em square' and 1.0 is the top
-	atlasScale: Float, // (normalized units) * atlasScale = (pixels in texture atlas)
+	// location of glyph within the text atlas, in units of pixels
 	atlasRect: {x: Int, y: Int, w: Int, h: Int},
+	atlasScale: Float, // (normalized font units) * atlasScale = (pixels in texture atlas)
 
-	bounds: {left: Float, bottom: Float, right: Float, top: Float},
-	translate: {x: Float, y: Float},
+	// the following are in normalized font units, where 0 is bottom of the authoring 'em square' and 1.0 is the top
+	shapeBounds: {left: Float, bottom: Float, right: Float, top: Float},
+	// the shape offset within the atlasRect
+	shapeOffset: {x: Float, y: Float},
 }
 
 typedef TextureAtlasCharacter = {
+	// the distance from the glyph's x = 0 coordinate to the x = 0 coordinate of the next glyph, in normalized font units
 	advance: Float,
 	?glyph: TextureAtlasGlyph,
 }
@@ -84,7 +89,8 @@ class Main {
 
 	static var technique:TextureFontTechnique = MSDF;
 
-	static var msdfgenPath = 'msdfgen/msdfgen';
+	static var prebuiltBinariesDir = 'prebuilt';
+	static var msdfgenPath = 'prebuilt/msdfgen'; // search at runtime
 	static var charsetPath = 'charsets/ascii.txt';
 	static var localTmpDir = '__glyph-cache';
 	static var fontOutputDirectory = '';
@@ -99,15 +105,22 @@ class Main {
 		' ', '\t'
 	];
 
-	// not sure why msdfgen divides everything by 64 but it does
+	// not sure why msdfgen divides truetype's FUnits by 64 but it does
 	static inline var suToFUnits = 64.0;
 
 	static function main() {
 		Console.errorPrefix = '<b><red>></b> ';
 		Console.warnPrefix = '<b><yellow>></b> ';
 
-		if (Sys.systemName() == 'Windows') {
-			msdfgenPath += '.exe';
+		// search for msdfgen binary
+		var msdfBinaryName = Sys.systemName() == 'Windows' ? 'msdfgen.exe' : 'msdfgen';
+		var msdfSearchDirectories = ['.', 'msdfgen', 'prebuilt'];
+		for (dir in msdfSearchDirectories) {
+			var path = haxe.io.Path.join([dir, msdfBinaryName]);
+			if (sys.FileSystem.exists(path) && !sys.FileSystem.isDirectory(path)) {
+				msdfgenPath = path;
+				break;
+			}
 		}
 
 		var showHelp = false;
@@ -175,7 +188,6 @@ class Main {
 			}
 
 			// validate args
-
 			if (!sys.FileSystem.exists(msdfgenPath)) {
 				throw 'msdfgen executable was not found at <b>"$msdfgenPath"</b> – ensure it is built';
 			}
@@ -236,7 +248,8 @@ class Main {
 			Console.log('Reading glyph metrics');
 
 			var unitsPerEm = 2048;
-			Console.warn('Warning: unitsPerEm is hardcoded as 2048');
+			Console.warn('Warning: unitsPerEm is hardcoded as 2048. This may causes some fonts to have the wrong scale.');
+
 			var atlasCharacters = new haxe.DynamicAccess<TextureAtlasCharacter>();
 			// initialize each character
 			for (char in charList) {
@@ -245,8 +258,8 @@ class Main {
 					glyph: {
 						atlasScale: 0,
 						atlasRect: null,
-						bounds: null,
-						translate: null,
+						shapeBounds: null,
+						shapeOffset: null,
 					}
 				});
 			}
@@ -275,9 +288,9 @@ class Main {
 						case 'scale':
 							atlasCharacter.glyph.atlasScale = 1/norm(1/value[0]);
 						case 'bounds':
-							atlasCharacter.glyph.bounds = {left: norm(value[0]) , bottom: norm(value[1]), right: norm(value[2]), top: norm(value[3])};
+							atlasCharacter.glyph.shapeBounds = {left: norm(value[0]) , bottom: norm(value[1]), right: norm(value[2]), top: norm(value[3])};
 						case 'translate':
-							atlasCharacter.glyph.translate = {x: norm(value[0]), y: norm(value[1])};
+							atlasCharacter.glyph.shapeOffset = {x: norm(value[0]), y: norm(value[1])};
 						// case 'range':
 							// atlasCharacter.glyph.fieldRange = norm(value[0]);
 					}

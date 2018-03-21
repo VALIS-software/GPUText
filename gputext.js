@@ -24,26 +24,26 @@ var GPUText = {
 
 		const vertexArray = new Float32Array(totalTextLength * characterVertexCount * vertexElements);
 
-		const groups = new Array();
+		const groups = new Array(textGroups.length);
 
 		// character layout state
 		let x = 0;
 		let y = 0;
-		let characterOffset = 0; // in terms of numbers of vertices rather than elements
+		let characterOffset_vx = 0; // in terms of numbers of vertices rather than array elements
 		
 		for (let i = 0; i < textGroups.length; i++) {
 			const font  = textGroups[i].font;
 			const text = textGroups[i].text;
 
-			const groupOffset = characterOffset;
+			const groupOffset_vx = characterOffset_vx;
 
 			for (let c = 0; c < text.length; c++) {
 				const char = text[c];
-				const characterCode = text.charCodeAt(c);
+				const charCode = text.charCodeAt(c);
 
 				// @! layout
 				/*
-				switch (characterCode) {
+				switch (charCode) {
 					case 0xA0: // non-breaking space, fixed width
 						x += 1;
 						continue;
@@ -57,7 +57,7 @@ var GPUText = {
 				const fontCharacter = font.characters[char];
 
 				if (fontCharacter == null) {
-					console.warn(`Font does not contain character for code "${characterCode}"`);
+					console.warn(`Font does not contain character for code "${charCode}"`);
 					continue;
 				}
 
@@ -66,12 +66,12 @@ var GPUText = {
 					// character has a glyph; add it to the vertexArray
 
 					// quad dimensions
-					const px = x - glyph.translate.x;
-					const py = y - glyph.translate.y;
-					const w = glyph.atlasRect.w / glyph.atlasScale;
+					const px = x - glyph.shapeOffset.x;
+					const py = y - glyph.shapeOffset.y;
+					const w = glyph.atlasRect.w / glyph.atlasScale; // convert width to normalized font units
 					const h = glyph.atlasRect.h / glyph.atlasScale;
 					// uv
-					// add half-text offset for texel centers
+					// add half-text offset to map to texel centers
 					let ux = (glyph.atlasRect.x + 0.5) / font.textureSize.w;
 					let uy = (glyph.atlasRect.y + 0.5) / font.textureSize.h;
 					let uw = (glyph.atlasRect.w - 1) / font.textureSize.w;
@@ -79,8 +79,6 @@ var GPUText = {
 					// flip glyph y
 					uy = uy + uh;
 					uh = -uh;
-					// field range in normalized units for this character
-					const fieldRange = font.fieldRange_px / glyph.atlasScale;
 					// two-triangle quad with ccw face winding
 					vertexArray.set([
 						px     , py     , ux      , uy      , glyph.atlasScale, // bottom left
@@ -90,9 +88,9 @@ var GPUText = {
 						px     , py     , ux      , uy      , glyph.atlasScale, // bottom left
 						px + w , py     , ux + uw , uy      , glyph.atlasScale, // bottom right
 						px + w , py + h , ux + uw , uy + uh , glyph.atlasScale, // top right
-					], characterOffset * vertexElements);
-					// advance character in vertex array
-					characterOffset += characterVertexCount;
+					], characterOffset_vx * vertexElements);
+					// advance character quad in vertex array
+					characterOffset_vx += characterVertexCount;
 				}
 
 				// advance glyph position
@@ -100,12 +98,10 @@ var GPUText = {
 				x += fontCharacter.advance;
 			}
 
-			if (characterOffset > groupOffset) { // skip empty groups
-				groups.push({
-					vertexOffset: groupOffset,
-					vertexCount: characterOffset - groupOffset
-				});
-			}
+			groups[i] = {
+				vertexOffset: groupOffset_vx,
+				vertexCount: characterOffset_vx - groupOffset_vx
+			};
 		}
 
 		return {
