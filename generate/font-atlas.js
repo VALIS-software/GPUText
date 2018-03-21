@@ -696,8 +696,17 @@ Main.__name__ = true;
 Main.main = function() {
 	Console.errorPrefix = "<b><red>></b> ";
 	Console.warnPrefix = "<b><yellow>></b> ";
-	if(Sys.systemName() == "Windows") {
-		Main.msdfgenPath += ".exe";
+	var msdfBinaryName = Sys.systemName() == "Windows" ? "msdfgen.exe" : "msdfgen";
+	var msdfSearchDirectories = [".","msdfgen","prebuilt"];
+	var _g = 0;
+	while(_g < msdfSearchDirectories.length) {
+		var dir = msdfSearchDirectories[_g];
+		++_g;
+		var path = haxe_io_Path.join([dir,msdfBinaryName]);
+		if(sys_FileSystem.exists(path) && !sys_FileSystem.isDirectory(path)) {
+			Main.msdfgenPath = path;
+			break;
+		}
 	}
 	var showHelp = false;
 	var argHandler_getDoc = function() {
@@ -706,8 +715,8 @@ Main.main = function() {
 	var argHandler_parse = function(__args) {
 		var __index = 0;
 		while(__index < __args.length) {
-			var _g = __args[__index++];
-			switch(_g) {
+			var _g1 = __args[__index++];
+			switch(_g1) {
 			case "--charlist":
 				if(__index + 1 > __args.length) {
 					if(![false][__args.length - 1]) {
@@ -790,16 +799,16 @@ Main.main = function() {
 				++__index;
 				break;
 			default:
-				var arg = _g;
-				var path = arg;
-				if(path.charAt(0) == "-") {
-					if(["-help","-h","-?"].indexOf(path) != -1) {
+				var arg = _g1;
+				var path1 = arg;
+				if(path1.charAt(0) == "-") {
+					if(["-help","-h","-?"].indexOf(path1) != -1) {
 						showHelp = true;
 					} else {
-						throw new js__$Boot_HaxeError("Unrecognized argument <b>\"" + path + "\"</b>");
+						throw new js__$Boot_HaxeError("Unrecognized argument <b>\"" + path1 + "\"</b>");
 					}
 				}
-				Main.sourceTtfPaths.push(path);
+				Main.sourceTtfPaths.push(path1);
 			}
 		}
 	};
@@ -822,11 +831,11 @@ Main.main = function() {
 		if(Main.sourceTtfPaths.length == 0) {
 			throw new js__$Boot_HaxeError("Path of source TrueType font file is required");
 		}
-		var _g1 = 0;
+		var _g2 = 0;
 		var _g11 = Main.sourceTtfPaths;
-		while(_g1 < _g11.length) {
-			var ttfPath = _g11[_g1];
-			++_g1;
+		while(_g2 < _g11.length) {
+			var ttfPath = _g11[_g2];
+			++_g2;
 			if(!sys_FileSystem.exists(ttfPath)) {
 				throw new js__$Boot_HaxeError("Font file <b>\"" + ttfPath + "\"</b> does not exist");
 			}
@@ -834,8 +843,8 @@ Main.main = function() {
 		if(Main.charList == null) {
 			Main.charList = js_node_Fs.readFileSync(Main.charsetPath,{ encoding : "utf8"}).split("");
 		}
-		var _g2 = Main.technique;
-		if(_g2 != "msdf") {
+		var _g3 = Main.technique;
+		if(_g3 != "msdf") {
 			throw new js__$Boot_HaxeError("Font technique <b>\"" + Main.technique + "\"</b> is not implemented");
 		}
 	} catch( e ) {
@@ -848,11 +857,11 @@ Main.main = function() {
 	var glyphList = Main.charList.filter(function(c) {
 		return Main.whitespaceCharacters.indexOf(c) == -1;
 	});
-	var _g3 = 0;
+	var _g4 = 0;
 	var _g12 = Main.sourceTtfPaths;
-	while(_g3 < _g12.length) {
-		var ttfPath1 = _g12[_g3];
-		++_g3;
+	while(_g4 < _g12.length) {
+		var ttfPath1 = _g12[_g4];
+		++_g4;
 		var fontName = haxe_io_Path.withoutDirectory(haxe_io_Path.withoutExtension(ttfPath1));
 		sys_FileSystem.createDirectory(Main.localTmpDir);
 		Console.printFormatted(Console.logPrefix + ("" + ("Generating glyphs for <b>\"" + ttfPath1 + "\"</b>")) + "\n",0);
@@ -878,7 +887,7 @@ Main.main = function() {
 		}
 		Console.printFormatted(Console.logPrefix + "Reading glyph metrics" + "\n",0);
 		var unitsPerEm = 2048;
-		Console.printFormatted(Console.warnPrefix + "Warning: unitsPerEm is hardcoded as 2048" + "\n",1);
+		Console.printFormatted(Console.warnPrefix + "Warning: unitsPerEm is hardcoded as 2048. This may causes some fonts to have the wrong scale." + "\n",1);
 		var this1 = { };
 		var atlasCharacters = this1;
 		var _g22 = 0;
@@ -886,7 +895,7 @@ Main.main = function() {
 		while(_g22 < _g32.length) {
 			var char1 = _g32[_g22];
 			++_g22;
-			atlasCharacters[char1] = { advance : 1, glyph : { atlasScale : 0, atlasRect : null, bounds : null, translate : null}};
+			atlasCharacters[char1] = { advance : 1, glyph : { atlasScale : 0, atlasRect : null, shapeBounds : null, shapeOffset : null}};
 		}
 		var _g23 = 0;
 		var _g33 = Main.charList;
@@ -908,13 +917,13 @@ Main.main = function() {
 					atlasCharacter.advance = value[0] * 64.0 / unitsPerEm;
 					break;
 				case "bounds":
-					atlasCharacter.glyph.bounds = { left : value[0] * 64.0 / unitsPerEm, bottom : value[1] * 64.0 / unitsPerEm, right : value[2] * 64.0 / unitsPerEm, top : value[3] * 64.0 / unitsPerEm};
+					atlasCharacter.glyph.shapeBounds = { left : value[0] * 64.0 / unitsPerEm, bottom : value[1] * 64.0 / unitsPerEm, right : value[2] * 64.0 / unitsPerEm, top : value[3] * 64.0 / unitsPerEm};
 					break;
 				case "scale":
 					atlasCharacter.glyph.atlasScale = 1 / (1 / value[0] * 64.0 / unitsPerEm);
 					break;
 				case "translate":
-					atlasCharacter.glyph.translate = { x : value[0] * 64.0 / unitsPerEm, y : value[1] * 64.0 / unitsPerEm};
+					atlasCharacter.glyph.shapeOffset = { x : value[0] * 64.0 / unitsPerEm, y : value[1] * 64.0 / unitsPerEm};
 					break;
 				}
 				str = varPattern.matchedRight();
@@ -943,10 +952,10 @@ Main.main = function() {
 				}
 				mode *= -1;
 			} else {
-				var _g4 = 0;
+				var _g41 = 0;
 				var _g35 = glyphList.length;
-				while(_g4 < _g35) {
-					var i = _g4++;
+				while(_g41 < _g35) {
+					var i = _g41++;
 					var char3 = glyphList[i];
 					var block = blocks[i];
 					var node = nodes[i];
@@ -961,9 +970,9 @@ Main.main = function() {
 			process.exit(1);
 		}
 		var _g36 = 0;
-		var _g41 = Main.charList;
-		while(_g36 < _g41.length) {
-			var char4 = _g41[_g36];
+		var _g42 = Main.charList;
+		while(_g36 < _g42.length) {
+			var char4 = _g42[_g36];
 			++_g36;
 			var hasGlyph = glyphList.indexOf(char4) != -1;
 			if(!hasGlyph) {
@@ -984,8 +993,8 @@ Main.main = function() {
 			var glyphBGRA = format_bmp_Tools._extract32(bmpData,format_bmp_Tools.BGRA_MAP,255);
 			var rect = atlasCharacters[char5].glyph.atlasRect;
 			var _g5 = 0;
-			var _g42 = glyphHeader.width;
-			while(_g5 < _g42) {
+			var _g43 = glyphHeader.width;
+			while(_g5 < _g43) {
 				var x = _g5++;
 				var _g7 = 0;
 				var _g6 = glyphHeader.height;
@@ -8057,6 +8066,14 @@ sys_FileSystem.exists = function(path) {
 		return false;
 	}
 };
+sys_FileSystem.isDirectory = function(path) {
+	try {
+		return js_node_Fs.statSync(path).isDirectory();
+	} catch( e ) {
+		var e1 = (e instanceof js__$Boot_HaxeError) ? e.val : e;
+		return false;
+	}
+};
 sys_FileSystem.createDirectory = function(path) {
 	try {
 		js_node_Fs.mkdirSync(path);
@@ -8255,7 +8272,8 @@ _$Console_FormatFlag_$Impl_$.BG_LIGHT_CYAN = "bg_light_cyan";
 _$Console_FormatFlag_$Impl_$.BG_LIGHT_WHITE = "bg_light_white";
 Main.textureAtlasFontVersion = 0;
 Main.technique = "msdf";
-Main.msdfgenPath = "msdfgen/msdfgen";
+Main.prebuiltBinariesDir = "prebuilt";
+Main.msdfgenPath = "msdfgen";
 Main.charsetPath = "charsets/ascii.txt";
 Main.localTmpDir = "__glyph-cache";
 Main.fontOutputDirectory = "";
