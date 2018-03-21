@@ -2,6 +2,8 @@
 
 Engine agnostic GPU text rendering
 
+[Demo](https://valis-software.github.io/GPU-Text/example)
+
 ## Font Atlas Generator
 ##### Usage
 ```
@@ -23,10 +25,15 @@ _ <path>                      : Path of TrueType font file
 ```
 
 ##### Building
-Checkout the msdf gen submodule
+The atlas tool depends on [msdfgen](https://github.com/Chlumsky/msdfgen), a command-line tool to generate MSDF distance fields for TrueType glyphs.
+Checkout the msdfgen submodule and build it (after installing msdfgen dependencies)
 ```
 git submodule init
+cd msdfgen
+cmake .
+make
 ```
+
 Then with haxe 4.0.0:
 ```
 haxelib install build.hxml
@@ -34,6 +41,7 @@ haxe build.hxml
 ```
 
 ## Release Todos
+- npm-ify the library
 - Complex layout demo
 	- Text of different fonts within a single layout
 - Document public methods
