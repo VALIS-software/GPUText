@@ -20,9 +20,7 @@ BinPacker.__name__ = true;
 BinPacker.fit = function(blocks,w,h) {
 	var sortedBlocks = blocks.slice();
 	sortedBlocks.sort(function(a,b) {
-		var am = Math.max(a.w,a.h);
-		var bm = Math.max(b.w,b.h);
-		if(am > bm) {
+		if(Math.max(a.w,a.h) > Math.max(b.w,b.h)) {
 			return 1;
 		} else {
 			return -1;
@@ -132,8 +130,7 @@ Sys.systemName = function() {
 	case "win32":
 		return "Windows";
 	default:
-		var other = _g;
-		return other;
+		return _g;
 	}
 };
 var Reflect = function() { };
@@ -242,20 +239,6 @@ EReg.prototype = {
 };
 var Console = function() { };
 Console.__name__ = true;
-Console.printlnFormatted = function(s,outputStream) {
-	if(outputStream == null) {
-		outputStream = 0;
-	}
-	Console.printFormatted(s + "\n",outputStream);
-	return;
-};
-Console.println = function(s,outputStream) {
-	if(outputStream == null) {
-		outputStream = 0;
-	}
-	Console.print(s + "\n",outputStream);
-	return;
-};
 Console.printFormatted = function(s,outputStream) {
 	if(outputStream == null) {
 		outputStream = 0;
@@ -316,8 +299,7 @@ Console.printFormatted = function(s,outputStream) {
 		} else if(flag != "") {
 			activeFormatFlagStack.remove(flag);
 		} else {
-			var result1 = activeFormatFlagStack.last();
-			activeFormatFlagStack.remove(result1);
+			activeFormatFlagStack.remove(activeFormatFlagStack.last());
 		}
 		var _g = Console.formatMode;
 		switch(_g) {
@@ -338,12 +320,12 @@ Console.printFormatted = function(s,outputStream) {
 			}
 			break;
 		case 1:
-			var result2 = activeFormatFlagStack.map(function(f1) {
+			var result1 = activeFormatFlagStack.map(function(f1) {
 				return Console.getBrowserFormat(f1);
 			}).filter(function(s2) {
 				return s2 != null;
 			}).join(";");
-			browserFormatArguments.push(result2);
+			browserFormatArguments.push(result1);
 			return "%c";
 		case 2:
 			return "";
@@ -386,17 +368,11 @@ Console.print = function(s,outputStream) {
 Console.getAsciiFormat = function(flag) {
 	if(flag.charAt(0) == "#") {
 		var hex = HxOverrides.substr(flag,1,null);
-		var r = Std.parseInt("0x" + HxOverrides.substr(hex,0,2));
-		var g = Std.parseInt("0x" + HxOverrides.substr(hex,2,2));
-		var b = Std.parseInt("0x" + HxOverrides.substr(hex,4,2));
-		return "\x1B[38;5;" + Console.rgbToAscii256(r,g,b) + "m";
+		return "\x1B[38;5;" + Console.rgbToAscii256(Std.parseInt("0x" + HxOverrides.substr(hex,0,2)),Std.parseInt("0x" + HxOverrides.substr(hex,2,2)),Std.parseInt("0x" + HxOverrides.substr(hex,4,2))) + "m";
 	}
 	if(HxOverrides.substr(flag,0,3) == "bg#") {
 		var hex1 = HxOverrides.substr(flag,3,null);
-		var r1 = Std.parseInt("0x" + HxOverrides.substr(hex1,0,2));
-		var g1 = Std.parseInt("0x" + HxOverrides.substr(hex1,2,2));
-		var b1 = Std.parseInt("0x" + HxOverrides.substr(hex1,4,2));
-		return "\x1B[48;5;" + Console.rgbToAscii256(r1,g1,b1) + "m";
+		return "\x1B[48;5;" + Console.rgbToAscii256(Std.parseInt("0x" + HxOverrides.substr(hex1,0,2)),Std.parseInt("0x" + HxOverrides.substr(hex1,2,2)),Std.parseInt("0x" + HxOverrides.substr(hex1,4,2))) + "m";
 	}
 	switch(flag) {
 	case "bg_black":
@@ -503,23 +479,11 @@ Console.rgbToAscii256 = function(r,g,b) {
 	var ir = nearIdx(r,colorSteps);
 	var ig = nearIdx(g,colorSteps);
 	var ib = nearIdx(b,colorSteps);
-	var ier = Math.abs(r - colorSteps[ir]);
-	var ieg = Math.abs(g - colorSteps[ig]);
-	var ieb = Math.abs(b - colorSteps[ib]);
-	var averageColorError = ier + ieg + ieb;
 	var jr = Math.round((r - 8) / 10);
-	var jg = Math.round((g - 8) / 10);
-	var jb = Math.round((b - 8) / 10);
-	var jer = Math.abs(r - Math.max(Math.min(jr * 10 + 8,238),8));
-	var jeg = Math.abs(g - Math.max(Math.min(jg * 10 + 8,238),8));
-	var jeb = Math.abs(b - Math.max(Math.min(jb * 10 + 8,238),8));
-	var averageGrayError = jer + jeg + jeb;
-	if(averageGrayError < averageColorError && r == g && g == b) {
-		var grayIndex = jr + 232;
-		return grayIndex;
+	if(Math.abs(r - Math.max(Math.min(jr * 10 + 8,238),8)) + Math.abs(g - Math.max(Math.min(Math.round((g - 8) / 10) * 10 + 8,238),8)) + Math.abs(b - Math.max(Math.min(Math.round((b - 8) / 10) * 10 + 8,238),8)) < Math.abs(r - colorSteps[ir]) + Math.abs(g - colorSteps[ig]) + Math.abs(b - colorSteps[ib]) && r == g && g == b) {
+		return jr + 232;
 	} else {
-		var colorIndex = 16 + ir * 36 + ig * 6 + ib;
-		return colorIndex;
+		return 16 + ir * 36 + ig * 6 + ib;
 	}
 };
 Console.getBrowserFormat = function(flag) {
@@ -632,20 +596,6 @@ Console.determineConsoleFormatMode = function() {
 	}
 	return 2;
 };
-Console.joinArgs = function(rest) {
-	var msg = { expr : haxe_macro_ExprDef.EConst(haxe_macro_Constant.CString("")), pos : { file : "/usr/local/lib/haxe/lib/console,hx/0,2,3/src/Console.hx", min : 14564, max : 14566}};
-	var _g1 = 0;
-	var _g = rest.length;
-	while(_g1 < _g) {
-		var i = _g1++;
-		var e = rest[i];
-		msg = { expr : haxe_macro_ExprDef.EBinop(haxe_macro_Binop.OpAdd,msg,e), pos : { file : "/usr/local/lib/haxe/lib/console,hx/0,2,3/src/Console.hx", min : 14632, max : 14641}};
-		if(i != rest.length - 1) {
-			msg = { expr : haxe_macro_ExprDef.EBinop(haxe_macro_Binop.OpAdd,msg,{ expr : haxe_macro_ExprDef.EConst(haxe_macro_Constant.CString("" + Console.argSeparator)), pos : { file : "/usr/local/lib/haxe/lib/console,hx/0,2,3/src/Console.hx", min : 14696, max : 14711}}), pos : { file : "/usr/local/lib/haxe/lib/console,hx/0,2,3/src/Console.hx", min : 14689, max : 14711}};
-		}
-	}
-	return msg;
-};
 Console.exec = function(cmd,args) {
 	var p = js_node_ChildProcess.spawnSync(cmd,args,{ });
 	var stdout = p.stdout == null ? "" : p.stdout.toString();
@@ -653,43 +603,6 @@ Console.exec = function(cmd,args) {
 		stdout = "";
 	}
 	return { exit : p.status, stdout : stdout};
-};
-var _$Console_FormatFlag_$Impl_$ = {};
-_$Console_FormatFlag_$Impl_$.__name__ = true;
-_$Console_FormatFlag_$Impl_$.fromString = function(str) {
-	str = str.toLowerCase();
-	if(str.charAt(0) == "#" || HxOverrides.substr(str,0,3) == "bg#") {
-		var hIdx = str.indexOf("#");
-		var hex = HxOverrides.substr(str,hIdx + 1,null);
-		if(hex.length == 3) {
-			var a = hex.split("");
-			hex = [a[0],a[0],a[1],a[1],a[2],a[2]].join("");
-		}
-		if(new EReg("[^0-9a-f]","i").match(hex) || hex.length < 6) {
-			return "";
-		}
-		var normalized = str.substring(0,hIdx) + "#" + hex;
-		return normalized;
-	}
-	switch(str) {
-	case "!":
-		return "invert";
-	case "/":
-		return "reset";
-	case "b":
-		return "bold";
-	case "bg_gray":
-		return "bg_light_black";
-	case "gray":
-		return "light_black";
-	case "i":
-		return "italic";
-	case "u":
-		return "underline";
-	default:
-		var transformed = str;
-		return transformed;
-	}
 };
 var Main = function() { };
 Main.__name__ = true;
@@ -700,9 +613,7 @@ Main.main = function() {
 	var msdfSearchDirectories = [".","msdfgen","prebuilt"];
 	var _g = 0;
 	while(_g < msdfSearchDirectories.length) {
-		var dir = msdfSearchDirectories[_g];
-		++_g;
-		var path = haxe_io_Path.join([dir,msdfBinaryName]);
+		var path = haxe_io_Path.join([msdfSearchDirectories[_g++],msdfBinaryName]);
 		if(sys_FileSystem.exists(path) && !sys_FileSystem.isDirectory(path)) {
 			Main.msdfgenPath = path;
 			break;
@@ -799,8 +710,7 @@ Main.main = function() {
 				++__index;
 				break;
 			default:
-				var arg = _g1;
-				var path1 = arg;
+				var path1 = _g1;
 				if(path1.charAt(0) == "-") {
 					if(["-help","-h","-?"].indexOf(path1) != -1) {
 						showHelp = true;
@@ -843,8 +753,7 @@ Main.main = function() {
 		if(Main.charList == null) {
 			Main.charList = js_node_Fs.readFileSync(Main.charsetPath,{ encoding : "utf8"}).split("");
 		}
-		var _g3 = Main.technique;
-		if(_g3 != "msdf") {
+		if(Main.technique != "msdf") {
 			throw new js__$Boot_HaxeError("Font technique <b>\"" + Main.technique + "\"</b> is not implemented");
 		}
 	} catch( e ) {
@@ -857,11 +766,11 @@ Main.main = function() {
 	var glyphList = Main.charList.filter(function(c) {
 		return Main.whitespaceCharacters.indexOf(c) == -1;
 	});
-	var _g4 = 0;
+	var _g3 = 0;
 	var _g12 = Main.sourceTtfPaths;
-	while(_g4 < _g12.length) {
-		var ttfPath1 = _g12[_g4];
-		++_g4;
+	while(_g3 < _g12.length) {
+		var ttfPath1 = _g12[_g3];
+		++_g3;
 		var fontName = haxe_io_Path.withoutDirectory(haxe_io_Path.withoutExtension(ttfPath1));
 		sys_FileSystem.createDirectory(Main.localTmpDir);
 		Console.printFormatted(Console.logPrefix + ("" + ("Generating glyphs for <b>\"" + ttfPath1 + "\"</b>")) + "\n",0);
@@ -874,11 +783,8 @@ Main.main = function() {
 		var _g21 = 0;
 		var _g31 = Main.charList;
 		while(_g21 < _g31.length) {
-			var char = _g31[_g21];
-			++_g21;
-			var charCode2 = HxOverrides.cca(char,0);
-			var cmd = "" + Main.msdfgenPath + " -font " + ttfPath1 + " " + charCode2 + " -size " + Main.size_px + " " + Main.size_px + " -printmetrics -pxrange " + Main.fieldRange_px + " -autoframe -o \"" + imagePath(charCode2) + "\"> \"" + metricsPath(charCode2) + "\"";
-			var e1 = js_node_ChildProcess.spawnSync(cmd,{ shell : true, stdio : "inherit"}).status;
+			var charCode2 = HxOverrides.cca(_g31[_g21++],0);
+			var e1 = js_node_ChildProcess.spawnSync("" + Main.msdfgenPath + " -font " + ttfPath1 + " " + charCode2 + " -size " + Main.size_px + " " + Main.size_px + " -printmetrics -pxrange " + Main.fieldRange_px + " -autoframe -o \"" + imagePath(charCode2) + "\"> \"" + metricsPath(charCode2) + "\"",{ shell : true, stdio : "inherit"}).status;
 			if(e1 != 0) {
 				Console.printFormatted(Console.errorPrefix + ("" + ("" + Main.msdfgenPath + " exited with code " + e1)) + "\n",2);
 				process.exit(e1);
@@ -886,25 +792,18 @@ Main.main = function() {
 			}
 		}
 		Console.printFormatted(Console.logPrefix + "Reading glyph metrics" + "\n",0);
-		var unitsPerEm = 2048;
 		Console.printFormatted(Console.warnPrefix + "Warning: unitsPerEm is hardcoded as 2048. This may causes some fonts to have the wrong scale." + "\n",1);
-		var this1 = { };
-		var atlasCharacters = this1;
+		var atlasCharacters = { };
 		var _g22 = 0;
 		var _g32 = Main.charList;
-		while(_g22 < _g32.length) {
-			var char1 = _g32[_g22];
-			++_g22;
-			atlasCharacters[char1] = { advance : 1, glyph : { atlasScale : 0, atlasRect : null, shapeBounds : null, shapeOffset : null}};
-		}
+		while(_g22 < _g32.length) atlasCharacters[_g32[_g22++]] = { advance : 1, glyph : { atlasScale : 0, atlasRect : null, shapeBounds : null, shapeOffset : null}};
 		var _g23 = 0;
 		var _g33 = Main.charList;
 		while(_g23 < _g33.length) {
-			var char2 = _g33[_g23];
+			var char = _g33[_g23];
 			++_g23;
-			var charCode3 = HxOverrides.cca(char2,0);
-			var metricsFileContent = js_node_Fs.readFileSync(metricsPath(charCode3),{ encoding : "utf8"});
-			var atlasCharacter = atlasCharacters[char2];
+			var metricsFileContent = js_node_Fs.readFileSync(metricsPath(HxOverrides.cca(char,0)),{ encoding : "utf8"});
+			var atlasCharacter = atlasCharacters[char];
 			var varPattern = new EReg("^\\s*(\\w+)\\s*=([^\n]+)","");
 			var str = metricsFileContent;
 			while(varPattern.match(str)) {
@@ -914,16 +813,16 @@ Main.main = function() {
 				});
 				switch(name) {
 				case "advance":
-					atlasCharacter.advance = value[0] * 64.0 / unitsPerEm;
+					atlasCharacter.advance = value[0] * 64.0 / 2048;
 					break;
 				case "bounds":
-					atlasCharacter.glyph.shapeBounds = { left : value[0] * 64.0 / unitsPerEm, bottom : value[1] * 64.0 / unitsPerEm, right : value[2] * 64.0 / unitsPerEm, top : value[3] * 64.0 / unitsPerEm};
+					atlasCharacter.glyph.shapeBounds = { left : value[0] * 64.0 / 2048, bottom : value[1] * 64.0 / 2048, right : value[2] * 64.0 / 2048, top : value[3] * 64.0 / 2048};
 					break;
 				case "scale":
-					atlasCharacter.glyph.atlasScale = 1 / (1 / value[0] * 64.0 / unitsPerEm);
+					atlasCharacter.glyph.atlasScale = 1 / (1 / value[0] * 64.0 / 2048);
 					break;
 				case "translate":
-					atlasCharacter.glyph.shapeOffset = { x : value[0] * 64.0 / unitsPerEm, y : value[1] * 64.0 / unitsPerEm};
+					atlasCharacter.glyph.shapeOffset = { x : value[0] * 64.0 / 2048, y : value[1] * 64.0 / 2048};
 					break;
 				}
 				str = varPattern.matchedRight();
@@ -933,17 +832,15 @@ Main.main = function() {
 		var _g24 = [];
 		var _g34 = 0;
 		while(_g34 < glyphList.length) {
-			var _ = glyphList[_g34];
 			++_g34;
 			_g24.push({ w : Main.size_px, h : Main.size_px});
 		}
-		var blocks = _g24;
 		var atlasW = Main.ceilPot(Main.size_px);
 		var atlasH = Main.ceilPot(Main.size_px);
 		var mode = -1;
 		var fitSucceeded = false;
 		while(atlasW <= Main.maximumTextureSize && atlasH <= Main.maximumTextureSize) {
-			var nodes = BinPacker.fit(blocks,atlasW,atlasH);
+			var nodes = BinPacker.fit(_g24,atlasW,atlasH);
 			if(nodes.indexOf(null) != -1) {
 				if(mode == -1) {
 					atlasW *= 2;
@@ -952,14 +849,13 @@ Main.main = function() {
 				}
 				mode *= -1;
 			} else {
-				var _g41 = 0;
+				var _g4 = 0;
 				var _g35 = glyphList.length;
-				while(_g41 < _g35) {
-					var i = _g41++;
-					var char3 = glyphList[i];
-					var block = blocks[i];
+				while(_g4 < _g35) {
+					var i = _g4++;
+					var block = _g24[i];
 					var node = nodes[i];
-					atlasCharacters[char3].glyph.atlasRect = { x : Math.floor(node.x), y : Math.floor(node.y), w : block.w, h : block.h};
+					atlasCharacters[glyphList[i]].glyph.atlasRect = { x : Math.floor(node.x), y : Math.floor(node.y), w : block.w, h : block.h};
 				}
 				fitSucceeded = true;
 				break;
@@ -970,44 +866,36 @@ Main.main = function() {
 			process.exit(1);
 		}
 		var _g36 = 0;
-		var _g42 = Main.charList;
-		while(_g36 < _g42.length) {
-			var char4 = _g42[_g36];
+		var _g41 = Main.charList;
+		while(_g36 < _g41.length) {
+			var char1 = _g41[_g36];
 			++_g36;
-			var hasGlyph = glyphList.indexOf(char4) != -1;
-			if(!hasGlyph) {
-				Reflect.deleteField(atlasCharacters[char4],"glyph");
+			if(glyphList.indexOf(char1) == -1) {
+				Reflect.deleteField(atlasCharacters[char1],"glyph");
 			}
 		}
-		var channels = 3;
-		var bytesPerChannel = 1;
-		var mapRgbBytes = haxe_io_Bytes.ofData(new ArrayBuffer(channels * bytesPerChannel * atlasW * atlasH));
+		var mapRgbBytes = haxe_io_Bytes.ofData(new ArrayBuffer(3 * atlasW * atlasH));
 		var _g37 = 0;
 		while(_g37 < glyphList.length) {
-			var char5 = glyphList[_g37];
+			var char2 = glyphList[_g37];
 			++_g37;
-			var charCode4 = HxOverrides.cca(char5,0);
-			var input = new sys_io_FileInput(js_node_Fs.openSync(imagePath(charCode4),"r"));
-			var bmpData = new format_bmp_Reader(input).read();
+			var bmpData = new format_bmp_Reader(new sys_io_FileInput(js_node_Fs.openSync(imagePath(HxOverrides.cca(char2,0)),"r"))).read();
 			var glyphHeader = bmpData.header;
 			var glyphBGRA = format_bmp_Tools._extract32(bmpData,format_bmp_Tools.BGRA_MAP,255);
-			var rect = atlasCharacters[char5].glyph.atlasRect;
+			var rect = atlasCharacters[char2].glyph.atlasRect;
 			var _g5 = 0;
-			var _g43 = glyphHeader.width;
-			while(_g5 < _g43) {
+			var _g42 = glyphHeader.width;
+			while(_g5 < _g42) {
 				var x = _g5++;
 				var _g7 = 0;
 				var _g6 = glyphHeader.height;
 				while(_g7 < _g6) {
 					var y = _g7++;
 					var i1 = (y * glyphHeader.width + x) * 4;
-					var b = glyphBGRA.b[i1];
 					var g = glyphBGRA.b[i1 + 1];
 					var r = glyphBGRA.b[i1 + 2];
-					var mx = x + (rect.x | 0);
-					var my = y + (rect.y | 0);
-					var mi = (my * atlasW + mx) * 3;
-					mapRgbBytes.b[mi] = b & 255;
+					var mi = ((y + (rect.y | 0)) * atlasW + (x + (rect.x | 0))) * 3;
+					mapRgbBytes.b[mi] = glyphBGRA.b[i1] & 255;
 					mapRgbBytes.b[mi + 1] = g & 255;
 					mapRgbBytes.b[mi + 2] = r & 255;
 				}
@@ -1017,12 +905,10 @@ Main.main = function() {
 		var tmpFiles = js_node_Fs.readdirSync(Main.localTmpDir);
 		var _g38 = 0;
 		while(_g38 < tmpFiles.length) {
-			var name1 = tmpFiles[_g38];
-			++_g38;
+			var name1 = tmpFiles[_g38++];
 			try {
 				js_node_Fs.unlinkSync(haxe_io_Path.join([Main.localTmpDir,name1]));
 			} catch( e2 ) {
-				var e3 = (e2 instanceof js__$Boot_HaxeError) ? e2.val : e2;
 			}
 		}
 		js_node_Fs.rmdirSync(Main.localTmpDir);
@@ -1127,12 +1013,6 @@ _$Sys_FileOutput.prototype = $extend(haxe_io_Output.prototype,{
 	,writeString: function(s) {
 		js_node_Fs.writeSync(this.fd,s);
 	}
-	,flush: function() {
-		js_node_Fs.fsyncSync(this.fd);
-	}
-	,close: function() {
-		js_node_Fs.closeSync(this.fd);
-	}
 });
 var haxe_io_Input = function() { };
 haxe_io_Input.__name__ = true;
@@ -1153,10 +1033,7 @@ haxe_io_Input.prototype = {
 				--k;
 			}
 		} catch( eof ) {
-			var eof1 = (eof instanceof js__$Boot_HaxeError) ? eof.val : eof;
-			if((eof1 instanceof haxe_io_Eof)) {
-				var eof2 = eof1;
-			} else {
+			if(!((eof instanceof js__$Boot_HaxeError) ? eof.val : eof instanceof haxe_io_Eof)) {
 				throw eof;
 			}
 		}
@@ -1172,19 +1049,6 @@ haxe_io_Input.prototype = {
 			len -= k;
 		}
 	}
-	,read: function(nbytes) {
-		var s = new haxe_io_Bytes(new ArrayBuffer(nbytes));
-		var p = 0;
-		while(nbytes > 0) {
-			var k = this.readBytes(s,p,nbytes);
-			if(k == 0) {
-				throw new js__$Boot_HaxeError(haxe_io_Error.Blocked);
-			}
-			p += k;
-			nbytes -= k;
-		}
-		return s;
-	}
 	,readInt16: function() {
 		var ch1 = this.readByte();
 		var ch2 = this.readByte();
@@ -1193,15 +1057,6 @@ haxe_io_Input.prototype = {
 			return n - 65536;
 		}
 		return n;
-	}
-	,readUInt16: function() {
-		var ch1 = this.readByte();
-		var ch2 = this.readByte();
-		if(this.bigEndian) {
-			return ch2 | ch1 << 8;
-		} else {
-			return ch1 | ch2 << 8;
-		}
 	}
 	,readInt32: function() {
 		var ch1 = this.readByte();
@@ -1215,44 +1070,6 @@ haxe_io_Input.prototype = {
 		}
 	}
 };
-var _$Sys_FileInput = function(fd) {
-	this.fd = fd;
-};
-_$Sys_FileInput.__name__ = true;
-_$Sys_FileInput.__super__ = haxe_io_Input;
-_$Sys_FileInput.prototype = $extend(haxe_io_Input.prototype,{
-	readByte: function() {
-		var buf = new js_node_buffer_Buffer(1);
-		try {
-			js_node_Fs.readSync(this.fd,buf,0,1,null);
-		} catch( e ) {
-			var e1 = (e instanceof js__$Boot_HaxeError) ? e.val : e;
-			if(e1.code == "EOF") {
-				throw new js__$Boot_HaxeError(new haxe_io_Eof());
-			} else {
-				throw new js__$Boot_HaxeError(haxe_io_Error.Custom(e1));
-			}
-		}
-		return buf[0];
-	}
-	,readBytes: function(s,pos,len) {
-		var data = s.b;
-		var buf = new js_node_buffer_Buffer(data.buffer,data.byteOffset,s.length);
-		try {
-			return js_node_Fs.readSync(this.fd,buf,pos,len,null);
-		} catch( e ) {
-			var e1 = (e instanceof js__$Boot_HaxeError) ? e.val : e;
-			if(e1.code == "EOF") {
-				throw new js__$Boot_HaxeError(new haxe_io_Eof());
-			} else {
-				throw new js__$Boot_HaxeError(haxe_io_Error.Custom(e1));
-			}
-		}
-	}
-	,close: function() {
-		js_node_Fs.closeSync(this.fd);
-	}
-});
 var format_bmp_Reader = function(i) {
 	this.input = i;
 };
@@ -1262,8 +1079,7 @@ format_bmp_Reader.prototype = {
 		var _g = 0;
 		var _g1 = [66,77];
 		while(_g < _g1.length) {
-			var b = _g1[_g];
-			++_g;
+			var b = _g1[_g++];
 			if(this.input.readByte() != b) {
 				throw new js__$Boot_HaxeError("Invalid header");
 			}
@@ -1271,10 +1087,10 @@ format_bmp_Reader.prototype = {
 		var fileSize = this.input.readInt32();
 		this.input.readInt32();
 		var offset = this.input.readInt32();
-		var infoHeaderSize = this.input.readInt32();
+		this.input.readInt32();
 		var width = this.input.readInt32();
 		var height = this.input.readInt32();
-		var numPlanes = this.input.readInt16();
+		this.input.readInt16();
 		var bits = this.input.readInt16();
 		var compression = this.input.readInt32();
 		var dataLength = this.input.readInt32();
@@ -1289,39 +1105,17 @@ format_bmp_Reader.prototype = {
 			throw new js__$Boot_HaxeError("" + bits + "bpp bitmaps not implemented.");
 		}
 		var p = new haxe_io_Bytes(new ArrayBuffer(dataLength));
-		var paddedStride = (width * bits + 31 & -32) >> 3;
 		var topToBottom = false;
 		if(height < 0) {
 			topToBottom = true;
 			height = -height;
 		}
 		this.input.readFullBytes(p,0,dataLength);
-		return { header : { width : width, height : height, paddedStride : paddedStride, topToBottom : topToBottom, bpp : bits, dataLength : dataLength}, pixels : p};
+		return { header : { width : width, height : height, paddedStride : (width * bits + 31 & -32) >> 3, topToBottom : topToBottom, bpp : bits, dataLength : dataLength}, pixels : p};
 	}
 };
 var format_bmp_Tools = function() { };
 format_bmp_Tools.__name__ = true;
-format_bmp_Tools.extractBGRA = function(bmp) {
-	return format_bmp_Tools._extract32(bmp,format_bmp_Tools.BGRA_MAP,255);
-};
-format_bmp_Tools.extractARGB = function(bmp) {
-	return format_bmp_Tools._extract32(bmp,format_bmp_Tools.ARGB_MAP,255);
-};
-format_bmp_Tools.buildFromBGRA = function(width,height,srcBytes,topToBottom) {
-	if(topToBottom == null) {
-		topToBottom = false;
-	}
-	return format_bmp_Tools._buildFrom32(width,height,srcBytes,format_bmp_Tools.BGRA_MAP,topToBottom);
-};
-format_bmp_Tools.buildFromARGB = function(width,height,srcBytes,topToBottom) {
-	if(topToBottom == null) {
-		topToBottom = false;
-	}
-	return format_bmp_Tools._buildFrom32(width,height,srcBytes,format_bmp_Tools.ARGB_MAP,topToBottom);
-};
-format_bmp_Tools.computePaddedStride = function(width,bpp) {
-	return (width * bpp + 31 & -32) >> 3;
-};
 format_bmp_Tools._extract32 = function(bmp,channelMap,alpha) {
 	if(alpha == null) {
 		alpha = 255;
@@ -1355,39 +1149,6 @@ format_bmp_Tools._extract32 = function(bmp,channelMap,alpha) {
 	}
 	return dstBytes;
 };
-format_bmp_Tools._buildFrom32 = function(width,height,srcBytes,channelMap,topToBottom) {
-	if(topToBottom == null) {
-		topToBottom = false;
-	}
-	var bpp = 24;
-	var paddedStride = (width * bpp + 31 & -32) >> 3;
-	var bytesBGR = new haxe_io_Bytes(new ArrayBuffer(paddedStride * height));
-	var topToBottom1 = topToBottom;
-	var dataLength = bytesBGR.length;
-	var dstStride = width * 3;
-	var srcLen = width * height * 4;
-	var yDir = -1;
-	var dstPos = dataLength - paddedStride;
-	var srcPos = 0;
-	if(topToBottom1) {
-		yDir = 1;
-		dstPos = 0;
-	}
-	while(srcPos < srcLen) {
-		var i = dstPos;
-		while(i < dstPos + dstStride) {
-			var r = srcBytes.b[srcPos + channelMap[1]];
-			var g = srcBytes.b[srcPos + channelMap[2]];
-			var b = srcBytes.b[srcPos + channelMap[3]];
-			bytesBGR.b[i++] = b & 255;
-			bytesBGR.b[i++] = g & 255;
-			bytesBGR.b[i++] = r & 255;
-			srcPos += 4;
-		}
-		dstPos += yDir * paddedStride;
-	}
-	return { header : { width : width, height : height, paddedStride : paddedStride, topToBottom : topToBottom1, bpp : bpp, dataLength : dataLength}, pixels : bytesBGR};
-};
 var format_png_Color = { __ename__ : true, __constructs__ : ["ColGrey","ColTrue","ColIndexed"] };
 format_png_Color.ColGrey = function(alpha) { var $x = ["ColGrey",0,alpha]; $x.__enum__ = format_png_Color; $x.toString = $estr; return $x; };
 format_png_Color.ColTrue = function(alpha) { var $x = ["ColTrue",1,alpha]; $x.__enum__ = format_png_Color; $x.toString = $estr; return $x; };
@@ -1404,983 +1165,6 @@ format_png_Chunk.CPalette = function(b) { var $x = ["CPalette",3,b]; $x.__enum__
 format_png_Chunk.CUnknown = function(id,data) { var $x = ["CUnknown",4,id,data]; $x.__enum__ = format_png_Chunk; $x.toString = $estr; return $x; };
 var format_png_Tools = function() { };
 format_png_Tools.__name__ = true;
-format_png_Tools.getHeader = function(d) {
-	var _g_head = d.h;
-	while(_g_head != null) {
-		var val = _g_head.item;
-		_g_head = _g_head.next;
-		var c = val;
-		if(c[1] == 1) {
-			var h = c[2];
-			return h;
-		}
-	}
-	throw new js__$Boot_HaxeError("Header not found");
-};
-format_png_Tools.getPalette = function(d) {
-	var _g_head = d.h;
-	while(_g_head != null) {
-		var val = _g_head.item;
-		_g_head = _g_head.next;
-		var c = val;
-		if(c[1] == 3) {
-			var b = c[2];
-			return b;
-		}
-	}
-	return null;
-};
-format_png_Tools.filter = function(data,x,y,stride,prev,p,numChannels) {
-	if(numChannels == null) {
-		numChannels = 4;
-	}
-	var b = y == 0 ? 0 : data.b[p - stride];
-	var c = x == 0 || y == 0 ? 0 : data.b[p - stride - numChannels];
-	var k = prev + b - c;
-	var pa = k - prev;
-	if(pa < 0) {
-		pa = -pa;
-	}
-	var pb = k - b;
-	if(pb < 0) {
-		pb = -pb;
-	}
-	var pc = k - c;
-	if(pc < 0) {
-		pc = -pc;
-	}
-	if(pa <= pb && pa <= pc) {
-		return prev;
-	} else if(pb <= pc) {
-		return b;
-	} else {
-		return c;
-	}
-};
-format_png_Tools.reverseBytes = function(b) {
-	var p = 0;
-	var _g1 = 0;
-	var _g = b.length >> 2;
-	while(_g1 < _g) {
-		var i = _g1++;
-		var b1 = b.b[p];
-		var g = b.b[p + 1];
-		var r = b.b[p + 2];
-		var a = b.b[p + 3];
-		b.b[p++] = a & 255;
-		b.b[p++] = r & 255;
-		b.b[p++] = g & 255;
-		b.b[p++] = b1 & 255;
-	}
-};
-format_png_Tools.extractGrey = function(d) {
-	var h = format_png_Tools.getHeader(d);
-	var grey = new haxe_io_Bytes(new ArrayBuffer(h.width * h.height));
-	var data = null;
-	var fullData = null;
-	var _g_head = d.h;
-	while(_g_head != null) {
-		var val = _g_head.item;
-		_g_head = _g_head.next;
-		var c = val;
-		if(c[1] == 2) {
-			var b = c[2];
-			if(fullData != null) {
-				fullData.add(b);
-			} else if(data == null) {
-				data = b;
-			} else {
-				fullData = new haxe_io_BytesBuffer();
-				fullData.add(data);
-				fullData.add(b);
-				data = null;
-			}
-		}
-	}
-	if(fullData != null) {
-		data = fullData.getBytes();
-	}
-	if(data == null) {
-		throw new js__$Boot_HaxeError("Data not found");
-	}
-	data = format_tools_Inflate.run(data);
-	var r = 0;
-	var w = 0;
-	var _g = h.color;
-	if(_g[1] == 0) {
-		var alpha = _g[2];
-		if(h.colbits != 8) {
-			throw new js__$Boot_HaxeError("Unsupported color mode");
-		}
-		var width = h.width;
-		var stride = (alpha ? 2 : 1) * width + 1;
-		if(data.length < h.height * stride) {
-			throw new js__$Boot_HaxeError("Not enough data");
-		}
-		var rinc = alpha ? 2 : 1;
-		var _g1 = 0;
-		var _g2 = h.height;
-		while(_g1 < _g2) {
-			var y = _g1++;
-			var f = data.b[r++];
-			switch(f) {
-			case 0:
-				var _g3 = 0;
-				var _g21 = width;
-				while(_g3 < _g21) {
-					var x = _g3++;
-					var v = data.b[r];
-					r += rinc;
-					grey.b[w++] = v & 255;
-				}
-				break;
-			case 1:
-				var cv = 0;
-				var _g31 = 0;
-				var _g22 = width;
-				while(_g31 < _g22) {
-					var x1 = _g31++;
-					cv += data.b[r];
-					r += rinc;
-					grey.b[w++] = cv & 255;
-				}
-				break;
-			case 2:
-				var stride1 = y == 0 ? 0 : width;
-				var _g32 = 0;
-				var _g23 = width;
-				while(_g32 < _g23) {
-					var x2 = _g32++;
-					var v1 = data.b[r] + grey.b[w - stride1];
-					r += rinc;
-					grey.b[w++] = v1 & 255;
-				}
-				break;
-			case 3:
-				var cv1 = 0;
-				var stride2 = y == 0 ? 0 : width;
-				var _g33 = 0;
-				var _g24 = width;
-				while(_g33 < _g24) {
-					var x3 = _g33++;
-					cv1 = data.b[r] + (cv1 + grey.b[w - stride2] >> 1) & 255;
-					r += rinc;
-					grey.b[w++] = cv1 & 255;
-				}
-				break;
-			case 4:
-				var stride3 = width;
-				var cv2 = 0;
-				var _g34 = 0;
-				var _g25 = width;
-				while(_g34 < _g25) {
-					var x4 = _g34++;
-					var b1 = y == 0 ? 0 : grey.b[w - stride3];
-					var c1 = x4 == 0 || y == 0 ? 0 : grey.b[w - stride3 - 1];
-					var k = cv2 + b1 - c1;
-					var pa = k - cv2;
-					if(pa < 0) {
-						pa = -pa;
-					}
-					var pb = k - b1;
-					if(pb < 0) {
-						pb = -pb;
-					}
-					var pc = k - c1;
-					if(pc < 0) {
-						pc = -pc;
-					}
-					cv2 = (pa <= pb && pa <= pc ? cv2 : pb <= pc ? b1 : c1) + data.b[r] & 255;
-					r += rinc;
-					grey.b[w++] = cv2 & 255;
-				}
-				break;
-			default:
-				throw new js__$Boot_HaxeError("Invalid filter " + f);
-			}
-		}
-	} else {
-		throw new js__$Boot_HaxeError("Unsupported color mode");
-	}
-	return grey;
-};
-format_png_Tools.extract32 = function(d,bytes,flipY) {
-	var h = format_png_Tools.getHeader(d);
-	var bgra = bytes == null ? new haxe_io_Bytes(new ArrayBuffer(h.width * h.height * 4)) : bytes;
-	var data = null;
-	var fullData = null;
-	var _g_head = d.h;
-	while(_g_head != null) {
-		var val = _g_head.item;
-		_g_head = _g_head.next;
-		var c = val;
-		if(c[1] == 2) {
-			var b = c[2];
-			if(fullData != null) {
-				fullData.add(b);
-			} else if(data == null) {
-				data = b;
-			} else {
-				fullData = new haxe_io_BytesBuffer();
-				fullData.add(data);
-				fullData.add(b);
-				data = null;
-			}
-		}
-	}
-	if(fullData != null) {
-		data = fullData.getBytes();
-	}
-	if(data == null) {
-		throw new js__$Boot_HaxeError("Data not found");
-	}
-	data = format_tools_Inflate.run(data);
-	var r = 0;
-	var w = 0;
-	var lineDelta = 0;
-	if(flipY) {
-		lineDelta = -h.width * 8;
-		w = (h.height - 1) * (h.width * 4);
-	}
-	var flipY1 = flipY ? -1 : 1;
-	var _g = h.color;
-	switch(_g[1]) {
-	case 0:
-		var alpha = _g[2];
-		if(h.colbits != 8) {
-			throw new js__$Boot_HaxeError("Unsupported color mode");
-		}
-		var width = h.width;
-		var stride = (alpha ? 2 : 1) * width + 1;
-		if(data.length < h.height * stride) {
-			throw new js__$Boot_HaxeError("Not enough data");
-		}
-		var alphvaIdx = -1;
-		if(!alpha) {
-			var _g_head1 = d.h;
-			while(_g_head1 != null) {
-				var val1 = _g_head1.item;
-				_g_head1 = _g_head1.next;
-				var t = val1;
-				if(t[1] == 4) {
-					if(t[2] == "tRNS") {
-						var data1 = t[3];
-						if(data1.length >= 2) {
-							alphvaIdx = data1.b[1];
-						}
-						break;
-					}
-				}
-			}
-		}
-		var _g1 = 0;
-		var _g2 = h.height;
-		while(_g1 < _g2) {
-			var y = _g1++;
-			var f = data.b[r++];
-			switch(f) {
-			case 0:
-				if(alpha) {
-					var _g3 = 0;
-					var _g21 = width;
-					while(_g3 < _g21) {
-						var x = _g3++;
-						var v = data.b[r++];
-						bgra.b[w++] = v & 255;
-						bgra.b[w++] = v & 255;
-						bgra.b[w++] = v & 255;
-						bgra.b[w++] = data.b[r++] & 255;
-					}
-				} else {
-					var _g31 = 0;
-					var _g22 = width;
-					while(_g31 < _g22) {
-						var x1 = _g31++;
-						var v1 = data.b[r++];
-						bgra.b[w++] = v1 & 255;
-						bgra.b[w++] = v1 & 255;
-						bgra.b[w++] = v1 & 255;
-						bgra.b[w++] = (v1 == alphvaIdx ? 0 : 255) & 255;
-					}
-				}
-				break;
-			case 1:
-				var cv = 0;
-				var ca = 0;
-				if(alpha) {
-					var _g32 = 0;
-					var _g23 = width;
-					while(_g32 < _g23) {
-						var x2 = _g32++;
-						cv += data.b[r++];
-						bgra.b[w++] = cv & 255;
-						bgra.b[w++] = cv & 255;
-						bgra.b[w++] = cv & 255;
-						ca += data.b[r++];
-						bgra.b[w++] = ca & 255;
-					}
-				} else {
-					var _g33 = 0;
-					var _g24 = width;
-					while(_g33 < _g24) {
-						var x3 = _g33++;
-						cv += data.b[r++];
-						bgra.b[w++] = cv & 255;
-						bgra.b[w++] = cv & 255;
-						bgra.b[w++] = cv & 255;
-						bgra.b[w++] = (cv == alphvaIdx ? 0 : 255) & 255;
-					}
-				}
-				break;
-			case 2:
-				var stride1 = y == 0 ? 0 : width * 4 * flipY1;
-				if(alpha) {
-					var _g34 = 0;
-					var _g25 = width;
-					while(_g34 < _g25) {
-						var x4 = _g34++;
-						var v2 = data.b[r++] + bgra.b[w - stride1];
-						bgra.b[w++] = v2 & 255;
-						bgra.b[w++] = v2 & 255;
-						bgra.b[w++] = v2 & 255;
-						bgra.b[w++] = data.b[r++] + bgra.b[w - stride1] & 255;
-					}
-				} else {
-					var _g35 = 0;
-					var _g26 = width;
-					while(_g35 < _g26) {
-						var x5 = _g35++;
-						var v3 = data.b[r++] + bgra.b[w - stride1];
-						bgra.b[w++] = v3 & 255;
-						bgra.b[w++] = v3 & 255;
-						bgra.b[w++] = v3 & 255;
-						bgra.b[w++] = (v3 == alphvaIdx ? 0 : 255) & 255;
-					}
-				}
-				break;
-			case 3:
-				var cv1 = 0;
-				var ca1 = 0;
-				var stride2 = y == 0 ? 0 : width * 4 * flipY1;
-				if(alpha) {
-					var _g36 = 0;
-					var _g27 = width;
-					while(_g36 < _g27) {
-						var x6 = _g36++;
-						cv1 = data.b[r++] + (cv1 + bgra.b[w - stride2] >> 1) & 255;
-						bgra.b[w++] = cv1 & 255;
-						bgra.b[w++] = cv1 & 255;
-						bgra.b[w++] = cv1 & 255;
-						ca1 = data.b[r++] + (ca1 + bgra.b[w - stride2] >> 1) & 255;
-						bgra.b[w++] = ca1 & 255;
-					}
-				} else {
-					var _g37 = 0;
-					var _g28 = width;
-					while(_g37 < _g28) {
-						var x7 = _g37++;
-						cv1 = data.b[r++] + (cv1 + bgra.b[w - stride2] >> 1) & 255;
-						bgra.b[w++] = cv1 & 255;
-						bgra.b[w++] = cv1 & 255;
-						bgra.b[w++] = cv1 & 255;
-						bgra.b[w++] = (cv1 == alphvaIdx ? 0 : 255) & 255;
-					}
-				}
-				break;
-			case 4:
-				var stride3 = width * 4 * flipY1;
-				var cv2 = 0;
-				var ca2 = 0;
-				if(alpha) {
-					var _g38 = 0;
-					var _g29 = width;
-					while(_g38 < _g29) {
-						var x8 = _g38++;
-						var b1 = y == 0 ? 0 : bgra.b[w - stride3];
-						var c1 = x8 == 0 || y == 0 ? 0 : bgra.b[w - stride3 - 4];
-						var k = cv2 + b1 - c1;
-						var pa = k - cv2;
-						if(pa < 0) {
-							pa = -pa;
-						}
-						var pb = k - b1;
-						if(pb < 0) {
-							pb = -pb;
-						}
-						var pc = k - c1;
-						if(pc < 0) {
-							pc = -pc;
-						}
-						var pos = r++;
-						cv2 = (pa <= pb && pa <= pc ? cv2 : pb <= pc ? b1 : c1) + data.b[pos] & 255;
-						bgra.b[w++] = cv2 & 255;
-						bgra.b[w++] = cv2 & 255;
-						bgra.b[w++] = cv2 & 255;
-						var b2 = y == 0 ? 0 : bgra.b[w - stride3];
-						var c2 = x8 == 0 || y == 0 ? 0 : bgra.b[w - stride3 - 4];
-						var k1 = ca2 + b2 - c2;
-						var pa1 = k1 - ca2;
-						if(pa1 < 0) {
-							pa1 = -pa1;
-						}
-						var pb1 = k1 - b2;
-						if(pb1 < 0) {
-							pb1 = -pb1;
-						}
-						var pc1 = k1 - c2;
-						if(pc1 < 0) {
-							pc1 = -pc1;
-						}
-						var pos1 = r++;
-						ca2 = (pa1 <= pb1 && pa1 <= pc1 ? ca2 : pb1 <= pc1 ? b2 : c2) + data.b[pos1] & 255;
-						bgra.b[w++] = ca2 & 255;
-					}
-				} else {
-					var _g39 = 0;
-					var _g210 = width;
-					while(_g39 < _g210) {
-						var x9 = _g39++;
-						var b3 = y == 0 ? 0 : bgra.b[w - stride3];
-						var c3 = x9 == 0 || y == 0 ? 0 : bgra.b[w - stride3 - 4];
-						var k2 = cv2 + b3 - c3;
-						var pa2 = k2 - cv2;
-						if(pa2 < 0) {
-							pa2 = -pa2;
-						}
-						var pb2 = k2 - b3;
-						if(pb2 < 0) {
-							pb2 = -pb2;
-						}
-						var pc2 = k2 - c3;
-						if(pc2 < 0) {
-							pc2 = -pc2;
-						}
-						var pos2 = r++;
-						cv2 = (pa2 <= pb2 && pa2 <= pc2 ? cv2 : pb2 <= pc2 ? b3 : c3) + data.b[pos2] & 255;
-						bgra.b[w++] = cv2 & 255;
-						bgra.b[w++] = cv2 & 255;
-						bgra.b[w++] = cv2 & 255;
-						bgra.b[w++] = (cv2 == alphvaIdx ? 0 : 255) & 255;
-					}
-				}
-				break;
-			default:
-				throw new js__$Boot_HaxeError("Invalid filter " + f);
-			}
-			w += lineDelta;
-		}
-		break;
-	case 1:
-		var alpha1 = _g[2];
-		if(h.colbits != 8) {
-			throw new js__$Boot_HaxeError("Unsupported color mode");
-		}
-		var width1 = h.width;
-		var stride4 = (alpha1 ? 4 : 3) * width1 + 1;
-		if(data.length < h.height * stride4) {
-			throw new js__$Boot_HaxeError("Not enough data");
-		}
-		var alphaRed = -1;
-		var alphaGreen = -1;
-		var alphaBlue = -1;
-		if(!alpha1) {
-			var _g_head2 = d.h;
-			while(_g_head2 != null) {
-				var val2 = _g_head2.item;
-				_g_head2 = _g_head2.next;
-				var t1 = val2;
-				if(t1[1] == 4) {
-					if(t1[2] == "tRNS") {
-						var data2 = t1[3];
-						if(data2.length >= 6) {
-							alphaRed = data2.b[1];
-							alphaGreen = data2.b[3];
-							alphaBlue = data2.b[5];
-						}
-						break;
-					}
-				}
-			}
-		}
-		var cr = 0;
-		var cg = 0;
-		var cb = 0;
-		var ca3 = 0;
-		var _g11 = 0;
-		var _g4 = h.height;
-		while(_g11 < _g4) {
-			var y1 = _g11++;
-			var f1 = data.b[r++];
-			switch(f1) {
-			case 0:
-				if(alpha1) {
-					var _g310 = 0;
-					var _g211 = width1;
-					while(_g310 < _g211) {
-						var x10 = _g310++;
-						bgra.b[w++] = data.b[r + 2] & 255;
-						bgra.b[w++] = data.b[r + 1] & 255;
-						bgra.b[w++] = data.b[r] & 255;
-						bgra.b[w++] = data.b[r + 3] & 255;
-						r += 4;
-					}
-				} else {
-					var _g311 = 0;
-					var _g212 = width1;
-					while(_g311 < _g212) {
-						var x11 = _g311++;
-						cb = data.b[r + 2];
-						bgra.b[w++] = cb & 255;
-						cg = data.b[r + 1];
-						bgra.b[w++] = cg & 255;
-						cr = data.b[r];
-						bgra.b[w++] = cr & 255;
-						bgra.b[w++] = (cr == alphaRed && cg == alphaGreen && cb == alphaBlue ? 0 : 255) & 255;
-						r += 3;
-					}
-				}
-				break;
-			case 1:
-				ca3 = 0;
-				cb = ca3;
-				cg = cb;
-				cr = cg;
-				if(alpha1) {
-					var _g312 = 0;
-					var _g213 = width1;
-					while(_g312 < _g213) {
-						var x12 = _g312++;
-						cb += data.b[r + 2];
-						bgra.b[w++] = cb & 255;
-						cg += data.b[r + 1];
-						bgra.b[w++] = cg & 255;
-						cr += data.b[r];
-						bgra.b[w++] = cr & 255;
-						ca3 += data.b[r + 3];
-						bgra.b[w++] = ca3 & 255;
-						r += 4;
-					}
-				} else {
-					var _g313 = 0;
-					var _g214 = width1;
-					while(_g313 < _g214) {
-						var x13 = _g313++;
-						cb += data.b[r + 2];
-						bgra.b[w++] = cb & 255;
-						cg += data.b[r + 1];
-						bgra.b[w++] = cg & 255;
-						cr += data.b[r];
-						bgra.b[w++] = cr & 255;
-						bgra.b[w++] = (cr == alphaRed && cg == alphaGreen && cb == alphaBlue ? 0 : 255) & 255;
-						r += 3;
-					}
-				}
-				break;
-			case 2:
-				var stride5 = y1 == 0 ? 0 : width1 * 4 * flipY1;
-				if(alpha1) {
-					var _g314 = 0;
-					var _g215 = width1;
-					while(_g314 < _g215) {
-						var x14 = _g314++;
-						bgra.b[w] = data.b[r + 2] + bgra.b[w - stride5] & 255;
-						++w;
-						bgra.b[w] = data.b[r + 1] + bgra.b[w - stride5] & 255;
-						++w;
-						bgra.b[w] = data.b[r] + bgra.b[w - stride5] & 255;
-						++w;
-						bgra.b[w] = data.b[r + 3] + bgra.b[w - stride5] & 255;
-						++w;
-						r += 4;
-					}
-				} else {
-					var _g315 = 0;
-					var _g216 = width1;
-					while(_g315 < _g216) {
-						var x15 = _g315++;
-						cb = data.b[r + 2] + bgra.b[w - stride5];
-						bgra.b[w] = cb & 255;
-						++w;
-						cg = data.b[r + 1] + bgra.b[w - stride5];
-						bgra.b[w] = cg & 255;
-						++w;
-						cr = data.b[r] + bgra.b[w - stride5];
-						bgra.b[w] = cr & 255;
-						++w;
-						bgra.b[w++] = (cr == alphaRed && cg == alphaGreen && cb == alphaBlue ? 0 : 255) & 255;
-						r += 3;
-					}
-				}
-				break;
-			case 3:
-				ca3 = 0;
-				cb = ca3;
-				cg = cb;
-				cr = cg;
-				var stride6 = y1 == 0 ? 0 : width1 * 4 * flipY1;
-				if(alpha1) {
-					var _g316 = 0;
-					var _g217 = width1;
-					while(_g316 < _g217) {
-						var x16 = _g316++;
-						cb = data.b[r + 2] + (cb + bgra.b[w - stride6] >> 1) & 255;
-						bgra.b[w++] = cb & 255;
-						cg = data.b[r + 1] + (cg + bgra.b[w - stride6] >> 1) & 255;
-						bgra.b[w++] = cg & 255;
-						cr = data.b[r] + (cr + bgra.b[w - stride6] >> 1) & 255;
-						bgra.b[w++] = cr & 255;
-						ca3 = data.b[r + 3] + (ca3 + bgra.b[w - stride6] >> 1) & 255;
-						bgra.b[w++] = ca3 & 255;
-						r += 4;
-					}
-				} else {
-					var _g317 = 0;
-					var _g218 = width1;
-					while(_g317 < _g218) {
-						var x17 = _g317++;
-						cb = data.b[r + 2] + (cb + bgra.b[w - stride6] >> 1) & 255;
-						bgra.b[w++] = cb & 255;
-						cg = data.b[r + 1] + (cg + bgra.b[w - stride6] >> 1) & 255;
-						bgra.b[w++] = cg & 255;
-						cr = data.b[r] + (cr + bgra.b[w - stride6] >> 1) & 255;
-						bgra.b[w++] = cr & 255;
-						bgra.b[w++] = (cr == alphaRed && cg == alphaGreen && cb == alphaBlue ? 0 : 255) & 255;
-						r += 3;
-					}
-				}
-				break;
-			case 4:
-				var stride7 = width1 * 4 * flipY1;
-				ca3 = 0;
-				cb = ca3;
-				cg = cb;
-				cr = cg;
-				if(alpha1) {
-					var _g318 = 0;
-					var _g219 = width1;
-					while(_g318 < _g219) {
-						var x18 = _g318++;
-						var b4 = y1 == 0 ? 0 : bgra.b[w - stride7];
-						var c4 = x18 == 0 || y1 == 0 ? 0 : bgra.b[w - stride7 - 4];
-						var k3 = cb + b4 - c4;
-						var pa3 = k3 - cb;
-						if(pa3 < 0) {
-							pa3 = -pa3;
-						}
-						var pb3 = k3 - b4;
-						if(pb3 < 0) {
-							pb3 = -pb3;
-						}
-						var pc3 = k3 - c4;
-						if(pc3 < 0) {
-							pc3 = -pc3;
-						}
-						cb = (pa3 <= pb3 && pa3 <= pc3 ? cb : pb3 <= pc3 ? b4 : c4) + data.b[r + 2] & 255;
-						bgra.b[w++] = cb & 255;
-						var b5 = y1 == 0 ? 0 : bgra.b[w - stride7];
-						var c5 = x18 == 0 || y1 == 0 ? 0 : bgra.b[w - stride7 - 4];
-						var k4 = cg + b5 - c5;
-						var pa4 = k4 - cg;
-						if(pa4 < 0) {
-							pa4 = -pa4;
-						}
-						var pb4 = k4 - b5;
-						if(pb4 < 0) {
-							pb4 = -pb4;
-						}
-						var pc4 = k4 - c5;
-						if(pc4 < 0) {
-							pc4 = -pc4;
-						}
-						cg = (pa4 <= pb4 && pa4 <= pc4 ? cg : pb4 <= pc4 ? b5 : c5) + data.b[r + 1] & 255;
-						bgra.b[w++] = cg & 255;
-						var b6 = y1 == 0 ? 0 : bgra.b[w - stride7];
-						var c6 = x18 == 0 || y1 == 0 ? 0 : bgra.b[w - stride7 - 4];
-						var k5 = cr + b6 - c6;
-						var pa5 = k5 - cr;
-						if(pa5 < 0) {
-							pa5 = -pa5;
-						}
-						var pb5 = k5 - b6;
-						if(pb5 < 0) {
-							pb5 = -pb5;
-						}
-						var pc5 = k5 - c6;
-						if(pc5 < 0) {
-							pc5 = -pc5;
-						}
-						cr = (pa5 <= pb5 && pa5 <= pc5 ? cr : pb5 <= pc5 ? b6 : c6) + data.b[r] & 255;
-						bgra.b[w++] = cr & 255;
-						var b7 = y1 == 0 ? 0 : bgra.b[w - stride7];
-						var c7 = x18 == 0 || y1 == 0 ? 0 : bgra.b[w - stride7 - 4];
-						var k6 = ca3 + b7 - c7;
-						var pa6 = k6 - ca3;
-						if(pa6 < 0) {
-							pa6 = -pa6;
-						}
-						var pb6 = k6 - b7;
-						if(pb6 < 0) {
-							pb6 = -pb6;
-						}
-						var pc6 = k6 - c7;
-						if(pc6 < 0) {
-							pc6 = -pc6;
-						}
-						ca3 = (pa6 <= pb6 && pa6 <= pc6 ? ca3 : pb6 <= pc6 ? b7 : c7) + data.b[r + 3] & 255;
-						bgra.b[w++] = ca3 & 255;
-						r += 4;
-					}
-				} else {
-					var _g319 = 0;
-					var _g220 = width1;
-					while(_g319 < _g220) {
-						var x19 = _g319++;
-						var b8 = y1 == 0 ? 0 : bgra.b[w - stride7];
-						var c8 = x19 == 0 || y1 == 0 ? 0 : bgra.b[w - stride7 - 4];
-						var k7 = cb + b8 - c8;
-						var pa7 = k7 - cb;
-						if(pa7 < 0) {
-							pa7 = -pa7;
-						}
-						var pb7 = k7 - b8;
-						if(pb7 < 0) {
-							pb7 = -pb7;
-						}
-						var pc7 = k7 - c8;
-						if(pc7 < 0) {
-							pc7 = -pc7;
-						}
-						cb = (pa7 <= pb7 && pa7 <= pc7 ? cb : pb7 <= pc7 ? b8 : c8) + data.b[r + 2] & 255;
-						bgra.b[w++] = cb & 255;
-						var b9 = y1 == 0 ? 0 : bgra.b[w - stride7];
-						var c9 = x19 == 0 || y1 == 0 ? 0 : bgra.b[w - stride7 - 4];
-						var k8 = cg + b9 - c9;
-						var pa8 = k8 - cg;
-						if(pa8 < 0) {
-							pa8 = -pa8;
-						}
-						var pb8 = k8 - b9;
-						if(pb8 < 0) {
-							pb8 = -pb8;
-						}
-						var pc8 = k8 - c9;
-						if(pc8 < 0) {
-							pc8 = -pc8;
-						}
-						cg = (pa8 <= pb8 && pa8 <= pc8 ? cg : pb8 <= pc8 ? b9 : c9) + data.b[r + 1] & 255;
-						bgra.b[w++] = cg & 255;
-						var b10 = y1 == 0 ? 0 : bgra.b[w - stride7];
-						var c10 = x19 == 0 || y1 == 0 ? 0 : bgra.b[w - stride7 - 4];
-						var k9 = cr + b10 - c10;
-						var pa9 = k9 - cr;
-						if(pa9 < 0) {
-							pa9 = -pa9;
-						}
-						var pb9 = k9 - b10;
-						if(pb9 < 0) {
-							pb9 = -pb9;
-						}
-						var pc9 = k9 - c10;
-						if(pc9 < 0) {
-							pc9 = -pc9;
-						}
-						cr = (pa9 <= pb9 && pa9 <= pc9 ? cr : pb9 <= pc9 ? b10 : c10) + data.b[r] & 255;
-						bgra.b[w++] = cr & 255;
-						bgra.b[w++] = (cr == alphaRed && cg == alphaGreen && cb == alphaBlue ? 0 : 255) & 255;
-						r += 3;
-					}
-				}
-				break;
-			default:
-				throw new js__$Boot_HaxeError("Invalid filter " + f1);
-			}
-			w += lineDelta;
-		}
-		break;
-	case 2:
-		var pal = format_png_Tools.getPalette(d);
-		if(pal == null) {
-			throw new js__$Boot_HaxeError("PNG Palette is missing");
-		}
-		var alpha2 = null;
-		var _g_head3 = d.h;
-		while(_g_head3 != null) {
-			var val3 = _g_head3.item;
-			_g_head3 = _g_head3.next;
-			var t2 = val3;
-			if(t2[1] == 4) {
-				if(t2[2] == "tRNS") {
-					var data3 = t2[3];
-					alpha2 = data3;
-					break;
-				}
-			}
-		}
-		if(alpha2 != null && alpha2.length < 1 << h.colbits) {
-			var alpha21 = new haxe_io_Bytes(new ArrayBuffer(1 << h.colbits));
-			alpha21.blit(0,alpha2,0,alpha2.length);
-			alpha21.fill(alpha2.length,alpha21.length - alpha2.length,255);
-			alpha2 = alpha21;
-		}
-		var width2 = h.width;
-		var stride8 = Math.ceil(width2 * h.colbits / 8) + 1;
-		if(data.length < h.height * stride8) {
-			throw new js__$Boot_HaxeError("Not enough data");
-		}
-		var rline = h.width * h.colbits >> 3;
-		var _g12 = 0;
-		var _g5 = h.height;
-		while(_g12 < _g5) {
-			var y2 = _g12++;
-			var f2 = data.b[r++];
-			if(f2 == 0) {
-				r += rline;
-				continue;
-			}
-			switch(f2) {
-			case 1:
-				var c11 = 0;
-				var _g320 = 0;
-				var _g221 = width2;
-				while(_g320 < _g221) {
-					var x20 = _g320++;
-					var v4 = data.b[r];
-					c11 += v4;
-					data.b[r++] = c11 & 255 & 255;
-				}
-				break;
-			case 2:
-				var stride9 = y2 == 0 ? 0 : rline + 1;
-				var _g321 = 0;
-				var _g222 = width2;
-				while(_g321 < _g222) {
-					var x21 = _g321++;
-					var v5 = data.b[r];
-					data.b[r] = v5 + data.b[r - stride9] & 255;
-					++r;
-				}
-				break;
-			case 3:
-				var c12 = 0;
-				var stride10 = y2 == 0 ? 0 : rline + 1;
-				var _g322 = 0;
-				var _g223 = width2;
-				while(_g322 < _g223) {
-					var x22 = _g322++;
-					var v6 = data.b[r];
-					c12 = v6 + (c12 + data.b[r - stride10] >> 1) & 255;
-					data.b[r++] = c12 & 255;
-				}
-				break;
-			case 4:
-				var stride11 = rline + 1;
-				var c13 = 0;
-				var _g323 = 0;
-				var _g224 = width2;
-				while(_g323 < _g224) {
-					var x23 = _g323++;
-					var v7 = data.b[r];
-					var b11 = y2 == 0 ? 0 : data.b[r - stride11];
-					var c14 = x23 == 0 || y2 == 0 ? 0 : data.b[r - stride11 - 1];
-					var k10 = c13 + b11 - c14;
-					var pa10 = k10 - c13;
-					if(pa10 < 0) {
-						pa10 = -pa10;
-					}
-					var pb10 = k10 - b11;
-					if(pb10 < 0) {
-						pb10 = -pb10;
-					}
-					var pc10 = k10 - c14;
-					if(pc10 < 0) {
-						pc10 = -pc10;
-					}
-					c13 = (pa10 <= pb10 && pa10 <= pc10 ? c13 : pb10 <= pc10 ? b11 : c14) + v7 & 255;
-					data.b[r++] = c13 & 255;
-				}
-				break;
-			default:
-				throw new js__$Boot_HaxeError("Invalid filter " + f2);
-			}
-		}
-		var r1 = 0;
-		if(h.colbits == 8) {
-			var _g13 = 0;
-			var _g6 = h.height;
-			while(_g13 < _g6) {
-				var y3 = _g13++;
-				++r1;
-				var _g324 = 0;
-				var _g225 = h.width;
-				while(_g324 < _g225) {
-					var x24 = _g324++;
-					var c15 = data.b[r1++];
-					bgra.b[w++] = pal.b[c15 * 3 + 2] & 255;
-					bgra.b[w++] = pal.b[c15 * 3 + 1] & 255;
-					bgra.b[w++] = pal.b[c15 * 3] & 255;
-					bgra.b[w++] = (alpha2 != null ? alpha2.b[c15] : 255) & 255;
-				}
-				w += lineDelta;
-			}
-		} else if(h.colbits < 8) {
-			var req = h.colbits;
-			var mask = (1 << req) - 1;
-			var _g14 = 0;
-			var _g7 = h.height;
-			while(_g14 < _g7) {
-				var y4 = _g14++;
-				++r1;
-				var bits = 0;
-				var nbits = 0;
-				var _g325 = 0;
-				var _g226 = h.width;
-				while(_g325 < _g226) {
-					var x25 = _g325++;
-					if(nbits < req) {
-						bits = bits << 8 | data.b[r1++];
-						nbits += 8;
-					}
-					var c16 = bits >>> nbits - req & mask;
-					nbits -= req;
-					bgra.b[w++] = pal.b[c16 * 3 + 2] & 255;
-					bgra.b[w++] = pal.b[c16 * 3 + 1] & 255;
-					bgra.b[w++] = pal.b[c16 * 3] & 255;
-					bgra.b[w++] = (alpha2 != null ? alpha2.b[c16] : 255) & 255;
-				}
-				w += lineDelta;
-			}
-		} else {
-			throw new js__$Boot_HaxeError(h.colbits + " indexed bits per pixel not supported");
-		}
-		break;
-	}
-	return bgra;
-};
-format_png_Tools.buildGrey = function(width,height,data,level) {
-	if(level == null) {
-		level = 9;
-	}
-	var rgb = new haxe_io_Bytes(new ArrayBuffer(width * height + height));
-	var w = 0;
-	var r = 0;
-	var _g1 = 0;
-	var _g = height;
-	while(_g1 < _g) {
-		var y = _g1++;
-		rgb.b[w++] = 0;
-		var _g3 = 0;
-		var _g2 = width;
-		while(_g3 < _g2) {
-			var x = _g3++;
-			rgb.b[w++] = data.b[r++] & 255;
-		}
-	}
-	var l = new haxe_ds_List();
-	l.add(format_png_Chunk.CHeader({ width : width, height : height, colbits : 8, color : format_png_Color.ColGrey(false), interlaced : false}));
-	l.add(format_png_Chunk.CData(format_tools_Deflate.run(rgb,level)));
-	l.add(format_png_Chunk.CEnd);
-	return l;
-};
 format_png_Tools.buildRGB = function(width,height,data,level) {
 	if(level == null) {
 		level = 9;
@@ -2389,14 +1173,12 @@ format_png_Tools.buildRGB = function(width,height,data,level) {
 	var w = 0;
 	var r = 0;
 	var _g1 = 0;
-	var _g = height;
-	while(_g1 < _g) {
-		var y = _g1++;
+	while(_g1 < height) {
+		++_g1;
 		rgb.b[w++] = 0;
 		var _g3 = 0;
-		var _g2 = width;
-		while(_g3 < _g2) {
-			var x = _g3++;
+		while(_g3 < width) {
+			++_g3;
 			rgb.b[w++] = data.b[r + 2] & 255;
 			rgb.b[w++] = data.b[r + 1] & 255;
 			rgb.b[w++] = data.b[r] & 255;
@@ -2409,64 +1191,6 @@ format_png_Tools.buildRGB = function(width,height,data,level) {
 	l.add(format_png_Chunk.CEnd);
 	return l;
 };
-format_png_Tools.build32ARGB = function(width,height,data,level) {
-	if(level == null) {
-		level = 9;
-	}
-	var rgba = new haxe_io_Bytes(new ArrayBuffer(width * height * 4 + height));
-	var w = 0;
-	var r = 0;
-	var _g1 = 0;
-	var _g = height;
-	while(_g1 < _g) {
-		var y = _g1++;
-		rgba.b[w++] = 0;
-		var _g3 = 0;
-		var _g2 = width;
-		while(_g3 < _g2) {
-			var x = _g3++;
-			rgba.b[w++] = data.b[r + 1] & 255;
-			rgba.b[w++] = data.b[r + 2] & 255;
-			rgba.b[w++] = data.b[r + 3] & 255;
-			rgba.b[w++] = data.b[r] & 255;
-			r += 4;
-		}
-	}
-	var l = new haxe_ds_List();
-	l.add(format_png_Chunk.CHeader({ width : width, height : height, colbits : 8, color : format_png_Color.ColTrue(true), interlaced : false}));
-	l.add(format_png_Chunk.CData(format_tools_Deflate.run(rgba,level)));
-	l.add(format_png_Chunk.CEnd);
-	return l;
-};
-format_png_Tools.build32BGRA = function(width,height,data,level) {
-	if(level == null) {
-		level = 9;
-	}
-	var rgba = new haxe_io_Bytes(new ArrayBuffer(width * height * 4 + height));
-	var w = 0;
-	var r = 0;
-	var _g1 = 0;
-	var _g = height;
-	while(_g1 < _g) {
-		var y = _g1++;
-		rgba.b[w++] = 0;
-		var _g3 = 0;
-		var _g2 = width;
-		while(_g3 < _g2) {
-			var x = _g3++;
-			rgba.b[w++] = data.b[r + 2] & 255;
-			rgba.b[w++] = data.b[r + 1] & 255;
-			rgba.b[w++] = data.b[r] & 255;
-			rgba.b[w++] = data.b[r + 3] & 255;
-			r += 4;
-		}
-	}
-	var l = new haxe_ds_List();
-	l.add(format_png_Chunk.CHeader({ width : width, height : height, colbits : 8, color : format_png_Color.ColTrue(true), interlaced : false}));
-	l.add(format_png_Chunk.CData(format_tools_Deflate.run(rgba,level)));
-	l.add(format_png_Chunk.CEnd);
-	return l;
-};
 var format_png_Writer = function(o) {
 	this.o = o;
 	o.set_bigEndian(true);
@@ -2476,60 +1200,49 @@ format_png_Writer.prototype = {
 	write: function(png) {
 		var _g = 0;
 		var _g1 = [137,80,78,71,13,10,26,10];
-		while(_g < _g1.length) {
-			var b = _g1[_g];
-			++_g;
-			this.o.writeByte(b);
-		}
+		while(_g < _g1.length) this.o.writeByte(_g1[_g++]);
 		var _g_head = png.h;
 		while(_g_head != null) {
 			var val = _g_head.item;
 			_g_head = _g_head.next;
-			var c = val;
-			switch(c[1]) {
+			switch(val[1]) {
 			case 0:
 				this.writeChunk("IEND",new haxe_io_Bytes(new ArrayBuffer(0)));
 				break;
 			case 1:
-				var h = c[2];
-				var b1 = new haxe_io_BytesOutput();
-				b1.set_bigEndian(true);
-				b1.writeInt32(h.width);
-				b1.writeInt32(h.height);
-				b1.writeByte(h.colbits);
+				var h = val[2];
+				var b = new haxe_io_BytesOutput();
+				b.set_bigEndian(true);
+				b.writeInt32(h.width);
+				b.writeInt32(h.height);
+				b.writeByte(h.colbits);
 				var _g2 = h.color;
 				var tmp;
 				switch(_g2[1]) {
 				case 0:
-					var alpha = _g2[2];
-					tmp = alpha ? 4 : 0;
+					tmp = _g2[2] ? 4 : 0;
 					break;
 				case 1:
-					var alpha1 = _g2[2];
-					tmp = alpha1 ? 6 : 2;
+					tmp = _g2[2] ? 6 : 2;
 					break;
 				case 2:
 					tmp = 3;
 					break;
 				}
-				b1.writeByte(tmp);
-				b1.writeByte(0);
-				b1.writeByte(0);
-				b1.writeByte(h.interlaced ? 1 : 0);
-				this.writeChunk("IHDR",b1.getBytes());
+				b.writeByte(tmp);
+				b.writeByte(0);
+				b.writeByte(0);
+				b.writeByte(h.interlaced ? 1 : 0);
+				this.writeChunk("IHDR",b.getBytes());
 				break;
 			case 2:
-				var d = c[2];
-				this.writeChunk("IDAT",d);
+				this.writeChunk("IDAT",val[2]);
 				break;
 			case 3:
-				var b2 = c[2];
-				this.writeChunk("PLTE",b2);
+				this.writeChunk("PLTE",val[2]);
 				break;
 			case 4:
-				var data = c[3];
-				var id = c[2];
-				this.writeChunk(id,data);
+				this.writeChunk(val[2],val[3]);
 				break;
 			}
 		}
@@ -2540,10 +1253,7 @@ format_png_Writer.prototype = {
 		this.o.write(data);
 		var crc = new haxe_crypto_Crc32();
 		var _g = 0;
-		while(_g < 4) {
-			var i = _g++;
-			crc.byte(HxOverrides.cca(id,i));
-		}
+		while(_g < 4) crc.byte(HxOverrides.cca(id,_g++));
 		crc.update(data,0,data.length);
 		this.o.writeInt32(crc.get());
 	}
@@ -2556,51 +1266,8 @@ format_tools_Deflate.run = function(b,level) {
 	}
 	return haxe_zip_Compress.run(b,level);
 };
-var format_tools_Inflate = function() { };
-format_tools_Inflate.__name__ = true;
-format_tools_Inflate.run = function(bytes) {
-	return haxe_zip_Uncompress.run(bytes);
-};
 var haxe_IMap = function() { };
 haxe_IMap.__name__ = true;
-var haxe_crypto_Adler32 = function() {
-	this.a1 = 1;
-	this.a2 = 0;
-};
-haxe_crypto_Adler32.__name__ = true;
-haxe_crypto_Adler32.read = function(i) {
-	var a = new haxe_crypto_Adler32();
-	var a2a = i.readByte();
-	var a2b = i.readByte();
-	var a1a = i.readByte();
-	var a1b = i.readByte();
-	a.a1 = a1a << 8 | a1b;
-	a.a2 = a2a << 8 | a2b;
-	return a;
-};
-haxe_crypto_Adler32.prototype = {
-	update: function(b,pos,len) {
-		var a1 = this.a1;
-		var a2 = this.a2;
-		var _g1 = pos;
-		var _g = pos + len;
-		while(_g1 < _g) {
-			var p = _g1++;
-			var c = b.b[p];
-			a1 = (a1 + c) % 65521;
-			a2 = (a2 + a1) % 65521;
-		}
-		this.a1 = a1;
-		this.a2 = a2;
-	}
-	,equals: function(a) {
-		if(a.a1 == this.a1) {
-			return a.a2 == this.a2;
-		} else {
-			return false;
-		}
-	}
-};
 var haxe_crypto_Crc32 = function() {
 	this.crc = -1;
 };
@@ -2610,7 +1277,7 @@ haxe_crypto_Crc32.prototype = {
 		var tmp = (this.crc ^ b) & 255;
 		var _g = 0;
 		while(_g < 8) {
-			var j = _g++;
+			++_g;
 			if((tmp & 1) == 1) {
 				tmp = tmp >>> 1 ^ -306674912;
 			} else {
@@ -2624,11 +1291,10 @@ haxe_crypto_Crc32.prototype = {
 		var _g1 = pos;
 		var _g = pos + len;
 		while(_g1 < _g) {
-			var i = _g1++;
-			var tmp = (this.crc ^ b1.bytes[i]) & 255;
+			var tmp = (this.crc ^ b1.bytes[_g1++]) & 255;
 			var _g2 = 0;
 			while(_g2 < 8) {
-				var j = _g2++;
+				++_g2;
 				if((tmp & 1) == 1) {
 					tmp = tmp >>> 1 ^ -306674912;
 				} else {
@@ -2835,9 +1501,8 @@ haxe_io_Bytes.prototype = {
 	}
 	,fill: function(pos,len,value) {
 		var _g1 = 0;
-		var _g = len;
-		while(_g1 < _g) {
-			var i = _g1++;
+		while(_g1 < len) {
+			++_g1;
 			this.b[pos++] = value & 255;
 		}
 	}
@@ -2853,17 +1518,6 @@ haxe_io_BytesBuffer.prototype = {
 			this.grow(1);
 		}
 		this.view.setUint8(this.pos++,byte);
-	}
-	,add: function(src) {
-		if(this.pos + src.length > this.size) {
-			this.grow(src.length);
-		}
-		if(this.size == 0) {
-			return;
-		}
-		var sub = new Uint8Array(src.b.buffer,src.b.byteOffset,src.length);
-		this.u8.set(sub,this.pos);
-		this.pos += src.length;
 	}
 	,addBytes: function(src,pos,len) {
 		if(pos < 0 || len < 0 || pos + len > src.length) {
@@ -2902,54 +1556,6 @@ haxe_io_BytesBuffer.prototype = {
 		return b;
 	}
 };
-var haxe_io_BytesInput = function(b,pos,len) {
-	if(pos == null) {
-		pos = 0;
-	}
-	if(len == null) {
-		len = b.length - pos;
-	}
-	if(pos < 0 || len < 0 || pos + len > b.length) {
-		throw new js__$Boot_HaxeError(haxe_io_Error.OutsideBounds);
-	}
-	this.b = b.b;
-	this.pos = pos;
-	this.len = len;
-	this.totlen = len;
-};
-haxe_io_BytesInput.__name__ = true;
-haxe_io_BytesInput.__super__ = haxe_io_Input;
-haxe_io_BytesInput.prototype = $extend(haxe_io_Input.prototype,{
-	readByte: function() {
-		if(this.len == 0) {
-			throw new js__$Boot_HaxeError(new haxe_io_Eof());
-		}
-		this.len--;
-		return this.b[this.pos++];
-	}
-	,readBytes: function(buf,pos,len) {
-		if(pos < 0 || len < 0 || pos + len > buf.length) {
-			throw new js__$Boot_HaxeError(haxe_io_Error.OutsideBounds);
-		}
-		if(this.len == 0 && len > 0) {
-			throw new js__$Boot_HaxeError(new haxe_io_Eof());
-		}
-		if(this.len < len) {
-			len = this.len;
-		}
-		var b1 = this.b;
-		var b2 = buf.b;
-		var _g1 = 0;
-		var _g = len;
-		while(_g1 < _g) {
-			var i = _g1++;
-			b2[pos + i] = b1[this.pos + i];
-		}
-		this.pos += len;
-		this.len -= len;
-		return len;
-	}
-});
 var haxe_io_BytesOutput = function() {
 	this.b = new haxe_io_BytesBuffer();
 };
@@ -3040,21 +1646,19 @@ haxe_io_Path.join = function(paths) {
 	var _g1 = 1;
 	var _g = paths1.length;
 	while(_g1 < _g) {
-		var i = _g1++;
 		path = haxe_io_Path.addTrailingSlash(path);
-		path += paths1[i];
+		path += paths1[_g1++];
 	}
 	return haxe_io_Path.normalize(path);
 };
 haxe_io_Path.normalize = function(path) {
-	var slash = "/";
-	path = path.split("\\").join(slash);
-	if(path == slash) {
-		return slash;
+	path = path.split("\\").join("/");
+	if(path == "/") {
+		return "/";
 	}
 	var target = [];
 	var _g = 0;
-	var _g1 = path.split(slash);
+	var _g1 = path.split("/");
 	while(_g < _g1.length) {
 		var token = _g1[_g];
 		++_g;
@@ -3064,29 +1668,27 @@ haxe_io_Path.normalize = function(path) {
 			target.push(token);
 		}
 	}
-	var tmp = target.join(slash);
+	var tmp = target.join("/");
 	var regex_r = new RegExp("([^:])/+","g".split("u").join(""));
-	var result = tmp.replace(regex_r,"$1" + slash);
+	tmp.replace(regex_r,"$1" + "/");
 	var acc_b = "";
 	var colon = false;
 	var slashes = false;
 	var _g11 = 0;
 	var _g2 = tmp.length;
 	while(_g11 < _g2) {
-		var i = _g11++;
-		var _g21 = tmp.charCodeAt(i);
+		var _g21 = tmp.charCodeAt(_g11++);
 		switch(_g21) {
 		case 47:
 			if(!colon) {
 				slashes = true;
 			} else {
-				var i1 = _g21;
 				colon = false;
 				if(slashes) {
 					acc_b += "/";
 					slashes = false;
 				}
-				acc_b += String.fromCharCode(i1);
+				acc_b += String.fromCharCode(_g21);
 			}
 			break;
 		case 58:
@@ -3094,13 +1696,12 @@ haxe_io_Path.normalize = function(path) {
 			colon = true;
 			break;
 		default:
-			var i2 = _g21;
 			colon = false;
 			if(slashes) {
 				acc_b += "/";
 				slashes = false;
 			}
-			acc_b += String.fromCharCode(i2);
+			acc_b += String.fromCharCode(_g21);
 		}
 	}
 	return acc_b;
@@ -3143,8 +1744,7 @@ haxe_io__$UInt16Array_UInt16Array_$Impl_$.fromArray = function(a,pos,length) {
 	if(pos == 0 && length == a.length) {
 		return new Uint16Array(a);
 	}
-	var this1 = new Uint16Array(a.length);
-	var i = this1;
+	var i = new Uint16Array(a.length);
 	var _g1 = 0;
 	var _g = length;
 	while(_g1 < _g) {
@@ -3164,666 +1764,11 @@ haxe_io__$UInt8Array_UInt8Array_$Impl_$.fromBytes = function(bytes,bytePos,lengt
 	}
 	return new Uint8Array(bytes.b.bufferValue,bytePos,length);
 };
-var haxe_macro_Constant = { __ename__ : true, __constructs__ : ["CInt","CFloat","CString","CIdent","CRegexp"] };
-haxe_macro_Constant.CInt = function(v) { var $x = ["CInt",0,v]; $x.__enum__ = haxe_macro_Constant; $x.toString = $estr; return $x; };
-haxe_macro_Constant.CFloat = function(f) { var $x = ["CFloat",1,f]; $x.__enum__ = haxe_macro_Constant; $x.toString = $estr; return $x; };
-haxe_macro_Constant.CString = function(s) { var $x = ["CString",2,s]; $x.__enum__ = haxe_macro_Constant; $x.toString = $estr; return $x; };
-haxe_macro_Constant.CIdent = function(s) { var $x = ["CIdent",3,s]; $x.__enum__ = haxe_macro_Constant; $x.toString = $estr; return $x; };
-haxe_macro_Constant.CRegexp = function(r,opt) { var $x = ["CRegexp",4,r,opt]; $x.__enum__ = haxe_macro_Constant; $x.toString = $estr; return $x; };
-var haxe_macro_Binop = { __ename__ : true, __constructs__ : ["OpAdd","OpMult","OpDiv","OpSub","OpAssign","OpEq","OpNotEq","OpGt","OpGte","OpLt","OpLte","OpAnd","OpOr","OpXor","OpBoolAnd","OpBoolOr","OpShl","OpShr","OpUShr","OpMod","OpAssignOp","OpInterval","OpArrow","OpIn"] };
-haxe_macro_Binop.OpAdd = ["OpAdd",0];
-haxe_macro_Binop.OpAdd.toString = $estr;
-haxe_macro_Binop.OpAdd.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpMult = ["OpMult",1];
-haxe_macro_Binop.OpMult.toString = $estr;
-haxe_macro_Binop.OpMult.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpDiv = ["OpDiv",2];
-haxe_macro_Binop.OpDiv.toString = $estr;
-haxe_macro_Binop.OpDiv.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpSub = ["OpSub",3];
-haxe_macro_Binop.OpSub.toString = $estr;
-haxe_macro_Binop.OpSub.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpAssign = ["OpAssign",4];
-haxe_macro_Binop.OpAssign.toString = $estr;
-haxe_macro_Binop.OpAssign.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpEq = ["OpEq",5];
-haxe_macro_Binop.OpEq.toString = $estr;
-haxe_macro_Binop.OpEq.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpNotEq = ["OpNotEq",6];
-haxe_macro_Binop.OpNotEq.toString = $estr;
-haxe_macro_Binop.OpNotEq.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpGt = ["OpGt",7];
-haxe_macro_Binop.OpGt.toString = $estr;
-haxe_macro_Binop.OpGt.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpGte = ["OpGte",8];
-haxe_macro_Binop.OpGte.toString = $estr;
-haxe_macro_Binop.OpGte.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpLt = ["OpLt",9];
-haxe_macro_Binop.OpLt.toString = $estr;
-haxe_macro_Binop.OpLt.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpLte = ["OpLte",10];
-haxe_macro_Binop.OpLte.toString = $estr;
-haxe_macro_Binop.OpLte.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpAnd = ["OpAnd",11];
-haxe_macro_Binop.OpAnd.toString = $estr;
-haxe_macro_Binop.OpAnd.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpOr = ["OpOr",12];
-haxe_macro_Binop.OpOr.toString = $estr;
-haxe_macro_Binop.OpOr.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpXor = ["OpXor",13];
-haxe_macro_Binop.OpXor.toString = $estr;
-haxe_macro_Binop.OpXor.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpBoolAnd = ["OpBoolAnd",14];
-haxe_macro_Binop.OpBoolAnd.toString = $estr;
-haxe_macro_Binop.OpBoolAnd.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpBoolOr = ["OpBoolOr",15];
-haxe_macro_Binop.OpBoolOr.toString = $estr;
-haxe_macro_Binop.OpBoolOr.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpShl = ["OpShl",16];
-haxe_macro_Binop.OpShl.toString = $estr;
-haxe_macro_Binop.OpShl.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpShr = ["OpShr",17];
-haxe_macro_Binop.OpShr.toString = $estr;
-haxe_macro_Binop.OpShr.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpUShr = ["OpUShr",18];
-haxe_macro_Binop.OpUShr.toString = $estr;
-haxe_macro_Binop.OpUShr.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpMod = ["OpMod",19];
-haxe_macro_Binop.OpMod.toString = $estr;
-haxe_macro_Binop.OpMod.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpAssignOp = function(op) { var $x = ["OpAssignOp",20,op]; $x.__enum__ = haxe_macro_Binop; $x.toString = $estr; return $x; };
-haxe_macro_Binop.OpInterval = ["OpInterval",21];
-haxe_macro_Binop.OpInterval.toString = $estr;
-haxe_macro_Binop.OpInterval.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpArrow = ["OpArrow",22];
-haxe_macro_Binop.OpArrow.toString = $estr;
-haxe_macro_Binop.OpArrow.__enum__ = haxe_macro_Binop;
-haxe_macro_Binop.OpIn = ["OpIn",23];
-haxe_macro_Binop.OpIn.toString = $estr;
-haxe_macro_Binop.OpIn.__enum__ = haxe_macro_Binop;
-var haxe_macro_Unop = { __ename__ : true, __constructs__ : ["OpIncrement","OpDecrement","OpNot","OpNeg","OpNegBits"] };
-haxe_macro_Unop.OpIncrement = ["OpIncrement",0];
-haxe_macro_Unop.OpIncrement.toString = $estr;
-haxe_macro_Unop.OpIncrement.__enum__ = haxe_macro_Unop;
-haxe_macro_Unop.OpDecrement = ["OpDecrement",1];
-haxe_macro_Unop.OpDecrement.toString = $estr;
-haxe_macro_Unop.OpDecrement.__enum__ = haxe_macro_Unop;
-haxe_macro_Unop.OpNot = ["OpNot",2];
-haxe_macro_Unop.OpNot.toString = $estr;
-haxe_macro_Unop.OpNot.__enum__ = haxe_macro_Unop;
-haxe_macro_Unop.OpNeg = ["OpNeg",3];
-haxe_macro_Unop.OpNeg.toString = $estr;
-haxe_macro_Unop.OpNeg.__enum__ = haxe_macro_Unop;
-haxe_macro_Unop.OpNegBits = ["OpNegBits",4];
-haxe_macro_Unop.OpNegBits.toString = $estr;
-haxe_macro_Unop.OpNegBits.__enum__ = haxe_macro_Unop;
-var haxe_macro_ExprDef = { __ename__ : true, __constructs__ : ["EConst","EArray","EBinop","EField","EParenthesis","EObjectDecl","EArrayDecl","ECall","ENew","EUnop","EVars","EFunction","EBlock","EFor","EIf","EWhile","ESwitch","ETry","EReturn","EBreak","EContinue","EUntyped","EThrow","ECast","EDisplay","EDisplayNew","ETernary","ECheckType","EMeta"] };
-haxe_macro_ExprDef.EConst = function(c) { var $x = ["EConst",0,c]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.EArray = function(e1,e2) { var $x = ["EArray",1,e1,e2]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.EBinop = function(op,e1,e2) { var $x = ["EBinop",2,op,e1,e2]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.EField = function(e,field) { var $x = ["EField",3,e,field]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.EParenthesis = function(e) { var $x = ["EParenthesis",4,e]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.EObjectDecl = function(fields) { var $x = ["EObjectDecl",5,fields]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.EArrayDecl = function(values) { var $x = ["EArrayDecl",6,values]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.ECall = function(e,params) { var $x = ["ECall",7,e,params]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.ENew = function(t,params) { var $x = ["ENew",8,t,params]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.EUnop = function(op,postFix,e) { var $x = ["EUnop",9,op,postFix,e]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.EVars = function(vars) { var $x = ["EVars",10,vars]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.EFunction = function(name,f) { var $x = ["EFunction",11,name,f]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.EBlock = function(exprs) { var $x = ["EBlock",12,exprs]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.EFor = function(it,expr) { var $x = ["EFor",13,it,expr]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.EIf = function(econd,eif,eelse) { var $x = ["EIf",14,econd,eif,eelse]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.EWhile = function(econd,e,normalWhile) { var $x = ["EWhile",15,econd,e,normalWhile]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.ESwitch = function(e,cases,edef) { var $x = ["ESwitch",16,e,cases,edef]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.ETry = function(e,catches) { var $x = ["ETry",17,e,catches]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.EReturn = function(e) { var $x = ["EReturn",18,e]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.EBreak = ["EBreak",19];
-haxe_macro_ExprDef.EBreak.toString = $estr;
-haxe_macro_ExprDef.EBreak.__enum__ = haxe_macro_ExprDef;
-haxe_macro_ExprDef.EContinue = ["EContinue",20];
-haxe_macro_ExprDef.EContinue.toString = $estr;
-haxe_macro_ExprDef.EContinue.__enum__ = haxe_macro_ExprDef;
-haxe_macro_ExprDef.EUntyped = function(e) { var $x = ["EUntyped",21,e]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.EThrow = function(e) { var $x = ["EThrow",22,e]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.ECast = function(e,t) { var $x = ["ECast",23,e,t]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.EDisplay = function(e,isCall) { var $x = ["EDisplay",24,e,isCall]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.EDisplayNew = function(t) { var $x = ["EDisplayNew",25,t]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.ETernary = function(econd,eif,eelse) { var $x = ["ETernary",26,econd,eif,eelse]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.ECheckType = function(e,t) { var $x = ["ECheckType",27,e,t]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-haxe_macro_ExprDef.EMeta = function(s,e) { var $x = ["EMeta",28,s,e]; $x.__enum__ = haxe_macro_ExprDef; $x.toString = $estr; return $x; };
-var haxe_macro_ComplexType = { __ename__ : true, __constructs__ : ["TPath","TFunction","TAnonymous","TParent","TExtend","TOptional","TNamed"] };
-haxe_macro_ComplexType.TPath = function(p) { var $x = ["TPath",0,p]; $x.__enum__ = haxe_macro_ComplexType; $x.toString = $estr; return $x; };
-haxe_macro_ComplexType.TFunction = function(args,ret) { var $x = ["TFunction",1,args,ret]; $x.__enum__ = haxe_macro_ComplexType; $x.toString = $estr; return $x; };
-haxe_macro_ComplexType.TAnonymous = function(fields) { var $x = ["TAnonymous",2,fields]; $x.__enum__ = haxe_macro_ComplexType; $x.toString = $estr; return $x; };
-haxe_macro_ComplexType.TParent = function(t) { var $x = ["TParent",3,t]; $x.__enum__ = haxe_macro_ComplexType; $x.toString = $estr; return $x; };
-haxe_macro_ComplexType.TExtend = function(p,fields) { var $x = ["TExtend",4,p,fields]; $x.__enum__ = haxe_macro_ComplexType; $x.toString = $estr; return $x; };
-haxe_macro_ComplexType.TOptional = function(t) { var $x = ["TOptional",5,t]; $x.__enum__ = haxe_macro_ComplexType; $x.toString = $estr; return $x; };
-haxe_macro_ComplexType.TNamed = function(n,t) { var $x = ["TNamed",6,n,t]; $x.__enum__ = haxe_macro_ComplexType; $x.toString = $estr; return $x; };
 var haxe_zip_Compress = function() { };
 haxe_zip_Compress.__name__ = true;
 haxe_zip_Compress.run = function(s,level) {
-	var result = pako_Pako.deflate(haxe_io__$UInt8Array_UInt8Array_$Impl_$.fromBytes(s),{ level : level});
-	return haxe_io_Bytes.ofData(result.buffer);
+	return haxe_io_Bytes.ofData(pako_Pako.deflate(haxe_io__$UInt8Array_UInt8Array_$Impl_$.fromBytes(s),{ level : level}).buffer);
 };
-var haxe_zip_Huffman = { __ename__ : true, __constructs__ : ["Found","NeedBit","NeedBits"] };
-haxe_zip_Huffman.Found = function(i) { var $x = ["Found",0,i]; $x.__enum__ = haxe_zip_Huffman; $x.toString = $estr; return $x; };
-haxe_zip_Huffman.NeedBit = function(left,right) { var $x = ["NeedBit",1,left,right]; $x.__enum__ = haxe_zip_Huffman; $x.toString = $estr; return $x; };
-haxe_zip_Huffman.NeedBits = function(n,table) { var $x = ["NeedBits",2,n,table]; $x.__enum__ = haxe_zip_Huffman; $x.toString = $estr; return $x; };
-var haxe_zip_HuffTools = function() {
-};
-haxe_zip_HuffTools.__name__ = true;
-haxe_zip_HuffTools.prototype = {
-	treeDepth: function(t) {
-		switch(t[1]) {
-		case 0:
-			return 0;
-		case 1:
-			var b = t[3];
-			var a = t[2];
-			var da = this.treeDepth(a);
-			var db = this.treeDepth(b);
-			return 1 + (da < db ? da : db);
-		case 2:
-			throw new js__$Boot_HaxeError("assert");
-		}
-	}
-	,treeCompress: function(t) {
-		var d = this.treeDepth(t);
-		if(d == 0) {
-			return t;
-		}
-		if(d == 1) {
-			if(t[1] == 1) {
-				var b = t[3];
-				var a = t[2];
-				return haxe_zip_Huffman.NeedBit(this.treeCompress(a),this.treeCompress(b));
-			} else {
-				throw new js__$Boot_HaxeError("assert");
-			}
-		}
-		var size = 1 << d;
-		var table = [];
-		var _g1 = 0;
-		var _g = size;
-		while(_g1 < _g) {
-			var i = _g1++;
-			table.push(haxe_zip_Huffman.Found(-1));
-		}
-		this.treeWalk(table,0,0,d,t);
-		return haxe_zip_Huffman.NeedBits(d,table);
-	}
-	,treeWalk: function(table,p,cd,d,t) {
-		if(t[1] == 1) {
-			var b = t[3];
-			var a = t[2];
-			if(d > 0) {
-				this.treeWalk(table,p,cd + 1,d - 1,a);
-				this.treeWalk(table,p | 1 << cd,cd + 1,d - 1,b);
-			} else {
-				table[p] = this.treeCompress(t);
-			}
-		} else {
-			table[p] = this.treeCompress(t);
-		}
-	}
-	,treeMake: function(bits,maxbits,v,len) {
-		if(len > maxbits) {
-			throw new js__$Boot_HaxeError("Invalid huffman");
-		}
-		var idx = v << 5 | len;
-		if(bits.h.hasOwnProperty(idx)) {
-			return haxe_zip_Huffman.Found(bits.h[idx]);
-		}
-		v <<= 1;
-		++len;
-		return haxe_zip_Huffman.NeedBit(this.treeMake(bits,maxbits,v,len),this.treeMake(bits,maxbits,v | 1,len));
-	}
-	,make: function(lengths,pos,nlengths,maxbits) {
-		var counts = [];
-		var tmp = [];
-		if(maxbits > 32) {
-			throw new js__$Boot_HaxeError("Invalid huffman");
-		}
-		var _g1 = 0;
-		var _g = maxbits;
-		while(_g1 < _g) {
-			var i = _g1++;
-			counts.push(0);
-			tmp.push(0);
-		}
-		var _g11 = 0;
-		var _g2 = nlengths;
-		while(_g11 < _g2) {
-			var i1 = _g11++;
-			var p = lengths[i1 + pos];
-			if(p >= maxbits) {
-				throw new js__$Boot_HaxeError("Invalid huffman");
-			}
-			counts[p]++;
-		}
-		var code = 0;
-		var _g12 = 1;
-		var _g3 = maxbits - 1;
-		while(_g12 < _g3) {
-			var i2 = _g12++;
-			code = code + counts[i2] << 1;
-			tmp[i2] = code;
-		}
-		var bits = new haxe_ds_IntMap();
-		var _g13 = 0;
-		var _g4 = nlengths;
-		while(_g13 < _g4) {
-			var i3 = _g13++;
-			var l = lengths[i3 + pos];
-			if(l != 0) {
-				var n = tmp[l - 1];
-				tmp[l - 1] = n + 1;
-				bits.h[n << 5 | l] = i3;
-			}
-		}
-		return this.treeCompress(haxe_zip_Huffman.NeedBit(this.treeMake(bits,maxbits,0,1),this.treeMake(bits,maxbits,1,1)));
-	}
-};
-var haxe_zip__$InflateImpl_Window = function(hasCrc) {
-	this.buffer = new haxe_io_Bytes(new ArrayBuffer(65536));
-	this.pos = 0;
-	if(hasCrc) {
-		this.crc = new haxe_crypto_Adler32();
-	}
-};
-haxe_zip__$InflateImpl_Window.__name__ = true;
-haxe_zip__$InflateImpl_Window.prototype = {
-	slide: function() {
-		if(this.crc != null) {
-			this.crc.update(this.buffer,0,32768);
-		}
-		var b = new haxe_io_Bytes(new ArrayBuffer(65536));
-		this.pos -= 32768;
-		b.blit(0,this.buffer,32768,this.pos);
-		this.buffer = b;
-	}
-	,addBytes: function(b,p,len) {
-		if(this.pos + len > 65536) {
-			this.slide();
-		}
-		this.buffer.blit(this.pos,b,p,len);
-		this.pos += len;
-	}
-	,addByte: function(c) {
-		if(this.pos == 65536) {
-			this.slide();
-		}
-		this.buffer.b[this.pos] = c & 255;
-		this.pos++;
-	}
-	,getLastChar: function() {
-		return this.buffer.b[this.pos - 1];
-	}
-	,available: function() {
-		return this.pos;
-	}
-	,checksum: function() {
-		if(this.crc != null) {
-			this.crc.update(this.buffer,0,this.pos);
-		}
-		return this.crc;
-	}
-};
-var haxe_zip__$InflateImpl_State = { __ename__ : true, __constructs__ : ["Head","Block","CData","Flat","Crc","Dist","DistOne","Done"] };
-haxe_zip__$InflateImpl_State.Head = ["Head",0];
-haxe_zip__$InflateImpl_State.Head.toString = $estr;
-haxe_zip__$InflateImpl_State.Head.__enum__ = haxe_zip__$InflateImpl_State;
-haxe_zip__$InflateImpl_State.Block = ["Block",1];
-haxe_zip__$InflateImpl_State.Block.toString = $estr;
-haxe_zip__$InflateImpl_State.Block.__enum__ = haxe_zip__$InflateImpl_State;
-haxe_zip__$InflateImpl_State.CData = ["CData",2];
-haxe_zip__$InflateImpl_State.CData.toString = $estr;
-haxe_zip__$InflateImpl_State.CData.__enum__ = haxe_zip__$InflateImpl_State;
-haxe_zip__$InflateImpl_State.Flat = ["Flat",3];
-haxe_zip__$InflateImpl_State.Flat.toString = $estr;
-haxe_zip__$InflateImpl_State.Flat.__enum__ = haxe_zip__$InflateImpl_State;
-haxe_zip__$InflateImpl_State.Crc = ["Crc",4];
-haxe_zip__$InflateImpl_State.Crc.toString = $estr;
-haxe_zip__$InflateImpl_State.Crc.__enum__ = haxe_zip__$InflateImpl_State;
-haxe_zip__$InflateImpl_State.Dist = ["Dist",5];
-haxe_zip__$InflateImpl_State.Dist.toString = $estr;
-haxe_zip__$InflateImpl_State.Dist.__enum__ = haxe_zip__$InflateImpl_State;
-haxe_zip__$InflateImpl_State.DistOne = ["DistOne",6];
-haxe_zip__$InflateImpl_State.DistOne.toString = $estr;
-haxe_zip__$InflateImpl_State.DistOne.__enum__ = haxe_zip__$InflateImpl_State;
-haxe_zip__$InflateImpl_State.Done = ["Done",7];
-haxe_zip__$InflateImpl_State.Done.toString = $estr;
-haxe_zip__$InflateImpl_State.Done.__enum__ = haxe_zip__$InflateImpl_State;
-var haxe_zip_InflateImpl = function(i,header,crc) {
-	if(crc == null) {
-		crc = true;
-	}
-	if(header == null) {
-		header = true;
-	}
-	this.isFinal = false;
-	this.htools = new haxe_zip_HuffTools();
-	this.huffman = this.buildFixedHuffman();
-	this.huffdist = null;
-	this.len = 0;
-	this.dist = 0;
-	this.state = header ? haxe_zip__$InflateImpl_State.Head : haxe_zip__$InflateImpl_State.Block;
-	this.input = i;
-	this.bits = 0;
-	this.nbits = 0;
-	this.needed = 0;
-	this.output = null;
-	this.outpos = 0;
-	this.lengths = [];
-	var _g = 0;
-	while(_g < 19) {
-		var i1 = _g++;
-		this.lengths.push(-1);
-	}
-	this.window = new haxe_zip__$InflateImpl_Window(crc);
-};
-haxe_zip_InflateImpl.__name__ = true;
-haxe_zip_InflateImpl.run = function(i,bufsize) {
-	if(bufsize == null) {
-		bufsize = 65536;
-	}
-	var buf = new haxe_io_Bytes(new ArrayBuffer(bufsize));
-	var output = new haxe_io_BytesBuffer();
-	var inflate = new haxe_zip_InflateImpl(i);
-	while(true) {
-		var len = inflate.readBytes(buf,0,bufsize);
-		output.addBytes(buf,0,len);
-		if(len < bufsize) {
-			break;
-		}
-	}
-	return output.getBytes();
-};
-haxe_zip_InflateImpl.prototype = {
-	buildFixedHuffman: function() {
-		if(haxe_zip_InflateImpl.FIXED_HUFFMAN != null) {
-			return haxe_zip_InflateImpl.FIXED_HUFFMAN;
-		}
-		var a = [];
-		var _g = 0;
-		while(_g < 288) {
-			var n = _g++;
-			a.push(n <= 143 ? 8 : n <= 255 ? 9 : n <= 279 ? 7 : 8);
-		}
-		haxe_zip_InflateImpl.FIXED_HUFFMAN = this.htools.make(a,0,288,10);
-		return haxe_zip_InflateImpl.FIXED_HUFFMAN;
-	}
-	,readBytes: function(b,pos,len) {
-		this.needed = len;
-		this.outpos = pos;
-		this.output = b;
-		if(len > 0) {
-			while(this.inflateLoop()) {
-			}
-		}
-		return len - this.needed;
-	}
-	,getBits: function(n) {
-		while(this.nbits < n) {
-			this.bits |= this.input.readByte() << this.nbits;
-			this.nbits += 8;
-		}
-		var b = this.bits & (1 << n) - 1;
-		this.nbits -= n;
-		this.bits >>= n;
-		return b;
-	}
-	,getBit: function() {
-		if(this.nbits == 0) {
-			this.nbits = 8;
-			this.bits = this.input.readByte();
-		}
-		var b = (this.bits & 1) == 1;
-		this.nbits--;
-		this.bits >>= 1;
-		return b;
-	}
-	,getRevBits: function(n) {
-		if(n == 0) {
-			return 0;
-		} else if(this.getBit()) {
-			return 1 << n - 1 | this.getRevBits(n - 1);
-		} else {
-			return this.getRevBits(n - 1);
-		}
-	}
-	,resetBits: function() {
-		this.bits = 0;
-		this.nbits = 0;
-	}
-	,addBytes: function(b,p,len) {
-		this.window.addBytes(b,p,len);
-		this.output.blit(this.outpos,b,p,len);
-		this.needed -= len;
-		this.outpos += len;
-	}
-	,addByte: function(b) {
-		this.window.addByte(b);
-		this.output.b[this.outpos] = b & 255;
-		this.needed--;
-		this.outpos++;
-	}
-	,addDistOne: function(n) {
-		var c = this.window.getLastChar();
-		var _g1 = 0;
-		var _g = n;
-		while(_g1 < _g) {
-			var i = _g1++;
-			this.addByte(c);
-		}
-	}
-	,addDist: function(d,len) {
-		this.addBytes(this.window.buffer,this.window.pos - d,len);
-	}
-	,applyHuffman: function(h) {
-		switch(h[1]) {
-		case 0:
-			var n = h[2];
-			return n;
-		case 1:
-			var b = h[3];
-			var a = h[2];
-			return this.applyHuffman(this.getBit() ? b : a);
-		case 2:
-			var tbl = h[3];
-			var n1 = h[2];
-			return this.applyHuffman(tbl[this.getBits(n1)]);
-		}
-	}
-	,inflateLengths: function(a,max) {
-		var i = 0;
-		var prev = 0;
-		while(i < max) {
-			var n = this.applyHuffman(this.huffman);
-			switch(n) {
-			case 0:case 1:case 2:case 3:case 4:case 5:case 6:case 7:case 8:case 9:case 10:case 11:case 12:case 13:case 14:case 15:
-				prev = n;
-				a[i] = n;
-				++i;
-				break;
-			case 16:
-				var end = i + 3 + this.getBits(2);
-				if(end > max) {
-					throw new js__$Boot_HaxeError("Invalid data");
-				}
-				while(i < end) {
-					a[i] = prev;
-					++i;
-				}
-				break;
-			case 17:
-				i += 3 + this.getBits(3);
-				if(i > max) {
-					throw new js__$Boot_HaxeError("Invalid data");
-				}
-				break;
-			case 18:
-				i += 11 + this.getBits(7);
-				if(i > max) {
-					throw new js__$Boot_HaxeError("Invalid data");
-				}
-				break;
-			default:
-				throw new js__$Boot_HaxeError("Invalid data");
-			}
-		}
-	}
-	,inflateLoop: function() {
-		var _g = this.state;
-		switch(_g[1]) {
-		case 0:
-			var cmf = this.input.readByte();
-			var cm = cmf & 15;
-			var cinfo = cmf >> 4;
-			if(cm != 8) {
-				throw new js__$Boot_HaxeError("Invalid data");
-			}
-			var flg = this.input.readByte();
-			var fdict = (flg & 32) != 0;
-			if(((cmf << 8) + flg) % 31 != 0) {
-				throw new js__$Boot_HaxeError("Invalid data");
-			}
-			if(fdict) {
-				throw new js__$Boot_HaxeError("Unsupported dictionary");
-			}
-			this.state = haxe_zip__$InflateImpl_State.Block;
-			return true;
-		case 1:
-			this.isFinal = this.getBit();
-			var _g1 = this.getBits(2);
-			switch(_g1) {
-			case 0:
-				this.len = this.input.readUInt16();
-				var nlen = this.input.readUInt16();
-				if(nlen != 65535 - this.len) {
-					throw new js__$Boot_HaxeError("Invalid data");
-				}
-				this.state = haxe_zip__$InflateImpl_State.Flat;
-				var r = this.inflateLoop();
-				this.resetBits();
-				return r;
-			case 1:
-				this.huffman = this.buildFixedHuffman();
-				this.huffdist = null;
-				this.state = haxe_zip__$InflateImpl_State.CData;
-				return true;
-			case 2:
-				var hlit = this.getBits(5) + 257;
-				var hdist = this.getBits(5) + 1;
-				var hclen = this.getBits(4) + 4;
-				var _g11 = 0;
-				var _g2 = hclen;
-				while(_g11 < _g2) {
-					var i = _g11++;
-					this.lengths[haxe_zip_InflateImpl.CODE_LENGTHS_POS[i]] = this.getBits(3);
-				}
-				var _g3 = hclen;
-				while(_g3 < 19) {
-					var i1 = _g3++;
-					this.lengths[haxe_zip_InflateImpl.CODE_LENGTHS_POS[i1]] = 0;
-				}
-				this.huffman = this.htools.make(this.lengths,0,19,8);
-				var lengths = [];
-				var _g12 = 0;
-				var _g4 = hlit + hdist;
-				while(_g12 < _g4) {
-					var i2 = _g12++;
-					lengths.push(0);
-				}
-				this.inflateLengths(lengths,hlit + hdist);
-				this.huffdist = this.htools.make(lengths,hlit,hdist,16);
-				this.huffman = this.htools.make(lengths,0,hlit,16);
-				this.state = haxe_zip__$InflateImpl_State.CData;
-				return true;
-			default:
-				throw new js__$Boot_HaxeError("Invalid data");
-			}
-			break;
-		case 2:
-			var n = this.applyHuffman(this.huffman);
-			if(n < 256) {
-				this.addByte(n);
-				return this.needed > 0;
-			} else if(n == 256) {
-				this.state = this.isFinal ? haxe_zip__$InflateImpl_State.Crc : haxe_zip__$InflateImpl_State.Block;
-				return true;
-			} else {
-				n -= 257;
-				var extra_bits = haxe_zip_InflateImpl.LEN_EXTRA_BITS_TBL[n];
-				if(extra_bits == -1) {
-					throw new js__$Boot_HaxeError("Invalid data");
-				}
-				this.len = haxe_zip_InflateImpl.LEN_BASE_VAL_TBL[n] + this.getBits(extra_bits);
-				var dist_code = this.huffdist == null ? this.getRevBits(5) : this.applyHuffman(this.huffdist);
-				extra_bits = haxe_zip_InflateImpl.DIST_EXTRA_BITS_TBL[dist_code];
-				if(extra_bits == -1) {
-					throw new js__$Boot_HaxeError("Invalid data");
-				}
-				this.dist = haxe_zip_InflateImpl.DIST_BASE_VAL_TBL[dist_code] + this.getBits(extra_bits);
-				if(this.dist > this.window.available()) {
-					throw new js__$Boot_HaxeError("Invalid data");
-				}
-				this.state = this.dist == 1 ? haxe_zip__$InflateImpl_State.DistOne : haxe_zip__$InflateImpl_State.Dist;
-				return true;
-			}
-			break;
-		case 3:
-			var rlen = this.len < this.needed ? this.len : this.needed;
-			var bytes = this.input.read(rlen);
-			this.len -= rlen;
-			this.addBytes(bytes,0,rlen);
-			if(this.len == 0) {
-				this.state = this.isFinal ? haxe_zip__$InflateImpl_State.Crc : haxe_zip__$InflateImpl_State.Block;
-			}
-			return this.needed > 0;
-		case 4:
-			var calc = this.window.checksum();
-			if(calc == null) {
-				this.state = haxe_zip__$InflateImpl_State.Done;
-				return true;
-			}
-			var crc = haxe_crypto_Adler32.read(this.input);
-			if(!calc.equals(crc)) {
-				throw new js__$Boot_HaxeError("Invalid CRC");
-			}
-			this.state = haxe_zip__$InflateImpl_State.Done;
-			return true;
-		case 5:
-			while(this.len > 0 && this.needed > 0) {
-				var rdist = this.len < this.dist ? this.len : this.dist;
-				var rlen1 = this.needed < rdist ? this.needed : rdist;
-				this.addDist(this.dist,rlen1);
-				this.len -= rlen1;
-			}
-			if(this.len == 0) {
-				this.state = haxe_zip__$InflateImpl_State.CData;
-			}
-			return this.needed > 0;
-		case 6:
-			var rlen2 = this.len < this.needed ? this.len : this.needed;
-			this.addDistOne(rlen2);
-			this.len -= rlen2;
-			if(this.len == 0) {
-				this.state = haxe_zip__$InflateImpl_State.CData;
-			}
-			return this.needed > 0;
-		case 7:
-			return false;
-		}
-	}
-};
-var haxe_zip_Uncompress = function() { };
-haxe_zip_Uncompress.__name__ = true;
-haxe_zip_Uncompress.run = function(src,bufsize) {
-	return haxe_zip_InflateImpl.run(new haxe_io_BytesInput(src),bufsize);
-};
-var hxargs_Args = function() { };
-hxargs_Args.__name__ = true;
 var js__$Boot_HaxeError = function(val) {
 	Error.call(this);
 	this.val = val;
@@ -3998,8 +1943,7 @@ pako_Deflate.prototype = {
 		strm.avail_in = strm.input.length;
 		while(true) {
 			if(strm.avail_out == 0) {
-				var this1 = new Uint8Array(chunkSize);
-				strm.output = this1;
+				strm.output = new Uint8Array(chunkSize);
 				strm.next_out = 0;
 				strm.avail_out = chunkSize;
 			}
@@ -4047,137 +1991,6 @@ pako_Deflate.prototype = {
 		this.msg = this.strm.msg;
 	}
 };
-var pako_Inflate = function(options) {
-	this.result = null;
-	this.header = new pako_zlib_GZHeader();
-	this.strm = new pako_zlib_ZStream();
-	this.chunks = [];
-	this.ended = false;
-	this.msg = "";
-	this.err = 0;
-	this.options = null;
-	this.options = { };
-	this.options.chunkSize = options != null && options.chunkSize != null ? options.chunkSize : pako_Inflate.DEFAULT_OPTIONS.chunkSize;
-	this.options.windowBits = options != null && options.windowBits != null ? options.windowBits : pako_Inflate.DEFAULT_OPTIONS.windowBits;
-	this.options.raw = options != null && options.raw != null ? options.raw : pako_Inflate.DEFAULT_OPTIONS.raw;
-	this.options.dictionary = options != null && options.dictionary != null ? options.dictionary : pako_Inflate.DEFAULT_OPTIONS.dictionary;
-	if(this.options.raw && this.options.windowBits >= 0 && this.options.windowBits < 16) {
-		this.options.windowBits = -this.options.windowBits;
-		if(this.options.windowBits == 0) {
-			this.options.windowBits = -15;
-		}
-	}
-	if(this.options.windowBits >= 0 && this.options.windowBits < 16 && (options == null || options.windowBits == null)) {
-		this.options.windowBits += 32;
-	}
-	if(this.options.windowBits > 15 && this.options.windowBits < 48) {
-		if((this.options.windowBits & 15) == 0) {
-			this.options.windowBits |= 15;
-		}
-	}
-	this.onData = $bind(this,this._onData);
-	this.onEnd = $bind(this,this._onEnd);
-	this.strm.avail_out = 0;
-	var status = pako_zlib_Inflate.inflateInit2(this.strm,this.options.windowBits);
-	if(status != 0) {
-		throw new js__$Boot_HaxeError(pako_zlib_Messages.get(status));
-	}
-	pako_zlib_Inflate.inflateGetHeader(this.strm,this.header);
-};
-pako_Inflate.__name__ = true;
-pako_Inflate.prototype = {
-	push: function(data,mode) {
-		if(mode == null) {
-			mode = false;
-		}
-		var strm = this.strm;
-		var chunkSize = this.options.chunkSize;
-		var dictionary = this.options.dictionary;
-		var status;
-		var _mode;
-		var next_out_utf8;
-		var tail;
-		var utf8str;
-		var allowBufError = false;
-		if(this.ended) {
-			return false;
-		}
-		if(typeof(mode) == "number" && ((mode | 0) === mode)) {
-			_mode = mode;
-		} else if(typeof(mode) == "boolean") {
-			_mode = mode ? 4 : 0;
-		} else {
-			throw new js__$Boot_HaxeError("Invalid mode.");
-		}
-		strm.input = data;
-		strm.next_in = 0;
-		strm.avail_in = strm.input.length;
-		while(true) {
-			if(strm.avail_out == 0) {
-				var this1 = new Uint8Array(chunkSize);
-				strm.output = this1;
-				strm.next_out = 0;
-				strm.avail_out = chunkSize;
-			}
-			status = pako_zlib_Inflate.inflate(strm,0);
-			if(status == 2 && dictionary != null) {
-				status = pako_zlib_Inflate.inflateSetDictionary(this.strm,dictionary);
-			}
-			if(status == -5 && allowBufError) {
-				status = 0;
-				allowBufError = false;
-			}
-			if(status != 1 && status != 0) {
-				this.onEnd(status);
-				this.ended = true;
-				return false;
-			}
-			if(strm.next_out != 0) {
-				if(strm.avail_out == 0 || status == 1 || strm.avail_in == 0 && (_mode == 4 || _mode == 2)) {
-					var tmp = this.onData;
-					var buf = strm.output;
-					var size = strm.next_out;
-					if(buf.length != size) {
-						buf = buf.subarray(0,size);
-					}
-					tmp(buf);
-				}
-			}
-			if(strm.avail_in == 0 && strm.avail_out == 0) {
-				allowBufError = true;
-			}
-			if(!((strm.avail_in > 0 || strm.avail_out == 0) && status != 1)) {
-				break;
-			}
-		}
-		if(status == 1) {
-			_mode = 4;
-		}
-		if(_mode == 4) {
-			status = pako_zlib_Inflate.inflateEnd(this.strm);
-			this.onEnd(status);
-			this.ended = true;
-			return status == 0;
-		}
-		if(_mode == 2) {
-			this.onEnd(0);
-			strm.avail_out = 0;
-			return true;
-		}
-		return true;
-	}
-	,_onData: function(chunk) {
-		this.chunks.push(chunk);
-	}
-	,_onEnd: function(status) {
-		if(status == 0) {
-			this.result = pako_utils_Common.flattenChunks(this.chunks);
-		}
-		this.chunks = [];
-		this.err = status;
-		this.msg = this.strm.msg;
-	}
-};
 var pako_Pako = function() { };
 pako_Pako.__name__ = true;
 pako_Pako.deflate = function(input,options) {
@@ -4188,70 +2001,19 @@ pako_Pako.deflate = function(input,options) {
 	}
 	return deflator.result;
 };
-pako_Pako.deflateRaw = function(input,options) {
-	if(options == null) {
-		options = { };
-	}
-	options.raw = true;
-	return pako_Pako.deflate(input,options);
-};
-pako_Pako.gzip = function(input,options) {
-	if(options == null) {
-		options = { };
-	}
-	options.gzip = true;
-	return pako_Pako.deflate(input,options);
-};
-pako_Pako.inflate = function(input,options) {
-	var inflator = new pako_Inflate(options);
-	inflator.push(input,true);
-	if(inflator.err != 0) {
-		throw new js__$Boot_HaxeError(inflator.msg != "" ? inflator.msg : pako_zlib_Messages.get(inflator.err));
-	}
-	return inflator.result;
-};
-pako_Pako.inflateRaw = function(input,options) {
-	if(options == null) {
-		options = { };
-	}
-	options.raw = true;
-	return pako_Pako.inflate(input,options);
-};
 var pako_utils_Common = function() { };
 pako_utils_Common.__name__ = true;
-pako_utils_Common.arraySet = function(dest,src,src_offs,len,dest_offs) {
-	haxe_io_Bytes.ofData(dest.buffer).blit(dest.byteOffset + dest_offs,haxe_io_Bytes.ofData(src.buffer),src.byteOffset + src_offs,len);
-};
-pako_utils_Common.zero = function(buf) {
-	var start = buf.byteOffset;
-	var len = buf.byteLength;
-	haxe_io_Bytes.ofData(buf.buffer).fill(start,len,0);
-};
-pako_utils_Common.shrinkBuf = function(buf,size) {
-	if(buf.length != size) {
-		buf = buf.subarray(0,size);
-	}
-	return buf;
-};
 pako_utils_Common.flattenChunks = function(chunks) {
-	var i;
 	var chunk;
 	var len = 0;
 	var l = chunks.length;
 	var _g1 = 0;
-	var _g = l;
-	while(_g1 < _g) {
-		var i1 = _g1++;
-		len += chunks[i1].length;
-	}
-	var this1 = new Uint8Array(len);
-	var result = this1;
+	while(_g1 < l) len += chunks[_g1++].length;
+	var result = new Uint8Array(len);
 	var pos = 0;
 	var _g11 = 0;
-	var _g2 = l;
-	while(_g11 < _g2) {
-		var i2 = _g11++;
-		chunk = chunks[i2];
+	while(_g11 < l) {
+		chunk = chunks[_g11++];
 		haxe_io_Bytes.ofData(result.buffer).blit(pos,haxe_io_Bytes.ofData(chunk.buffer),0,chunk.length);
 		pos += chunk.length;
 	}
@@ -4282,15 +2044,14 @@ var pako_zlib_CRC32 = function() { };
 pako_zlib_CRC32.__name__ = true;
 pako_zlib_CRC32.makeTable = function() {
 	var c;
-	var this1 = new Array(256);
-	var table = this1;
+	var table = new Array(256);
 	var _g = 0;
 	while(_g < 256) {
 		var n = _g++;
 		c = n;
 		var _g1 = 0;
 		while(_g1 < 8) {
-			var k = _g1++;
+			++_g1;
 			if((c & 1) == 1) {
 				c = -306674912 ^ c >>> 1;
 			} else {
@@ -4306,40 +2067,11 @@ pako_zlib_CRC32.crc32 = function(crc,buf,len,pos) {
 	var end = pos + len;
 	crc ^= -1;
 	var _g1 = pos;
-	var _g = end;
-	while(_g1 < _g) {
-		var i = _g1++;
-		crc = crc >>> 8 ^ t[(crc ^ buf[i]) & 255];
-	}
+	while(_g1 < end) crc = crc >>> 8 ^ t[(crc ^ buf[_g1++]) & 255];
 	return crc ^ -1;
 };
-var pako_zlib_Constants = function() { };
-pako_zlib_Constants.__name__ = true;
-var pako_zlib_Flush = function() { };
-pako_zlib_Flush.__name__ = true;
-var pako_zlib_ErrorStatus = function() { };
-pako_zlib_ErrorStatus.__name__ = true;
-var pako_zlib_CompressionLevel = function() { };
-pako_zlib_CompressionLevel.__name__ = true;
-var pako_zlib_Strategy = function() { };
-pako_zlib_Strategy.__name__ = true;
-var pako_zlib_DataType = function() { };
-pako_zlib_DataType.__name__ = true;
-var pako_zlib_Method = function() { };
-pako_zlib_Method.__name__ = true;
 var pako_zlib_Trees = function() { };
 pako_zlib_Trees.__name__ = true;
-pako_zlib_Trees.d_code = function(dist) {
-	if(dist < 256) {
-		return pako_zlib_Trees._dist_code[dist];
-	} else {
-		return pako_zlib_Trees._dist_code[256 + (dist >>> 7)];
-	}
-};
-pako_zlib_Trees.put_short = function(s,w) {
-	s.pending_buf[s.pending++] = w & 255 & 255;
-	s.pending_buf[s.pending++] = w >>> 8 & 255 & 255;
-};
 pako_zlib_Trees.send_bits = function(s,value,length) {
 	if(s.bi_valid > 16 - length) {
 		s.bi_buf |= value << s.bi_valid & 65535;
@@ -4352,9 +2084,6 @@ pako_zlib_Trees.send_bits = function(s,value,length) {
 		s.bi_buf |= value << s.bi_valid & 65535;
 		s.bi_valid += length;
 	}
-};
-pako_zlib_Trees.send_code = function(s,c,tree) {
-	pako_zlib_Trees.send_bits(s,tree[c * 2],tree[c * 2 + 1]);
 };
 pako_zlib_Trees.bi_reverse = function(code,len) {
 	var res = 0;
@@ -4396,16 +2125,11 @@ pako_zlib_Trees.gen_bitlen = function(s,desc) {
 	var f;
 	var overflow = 0;
 	var _g1 = 0;
-	var _g = 16;
-	while(_g1 < _g) {
-		var bits1 = _g1++;
-		s.bl_count[bits1] = 0;
-	}
+	while(_g1 < 16) s.bl_count[_g1++] = 0;
 	tree[s.heap[s.heap_max] * 2 + 1] = 0;
-	var _g2 = s.heap_max + 1;
-	while(_g2 < 573) {
-		var h = _g2++;
-		n = s.heap[h];
+	var _g = s.heap_max + 1;
+	while(_g < 573) {
+		n = s.heap[_g++];
 		bits = tree[tree[n * 2 + 1] * 2 + 1] + 1;
 		if(bits > max_length) {
 			bits = max_length;
@@ -4416,8 +2140,8 @@ pako_zlib_Trees.gen_bitlen = function(s,desc) {
 			continue;
 		}
 		var _g11 = bits;
-		var _g21 = s.bl_count;
-		_g21[_g11] = _g21[_g11] + 1 & 65535;
+		var _g2 = s.bl_count;
+		_g2[_g11] = _g2[_g11] + 1 & 65535;
 		xbits = 0;
 		if(n >= base) {
 			xbits = extra[n - base];
@@ -4431,7 +2155,7 @@ pako_zlib_Trees.gen_bitlen = function(s,desc) {
 	if(overflow == 0) {
 		return;
 	}
-	var h1 = 573;
+	var h = 573;
 	while(true) {
 		bits = max_length - 1;
 		while(s.bl_count[bits] == 0) --bits;
@@ -4441,9 +2165,8 @@ pako_zlib_Trees.gen_bitlen = function(s,desc) {
 		var _g4 = bits + 1;
 		var _g13 = s.bl_count;
 		_g13[_g4] = _g13[_g4] + 2 & 65535;
-		var _g5 = max_length;
 		var _g14 = s.bl_count;
-		_g14[_g5] = _g14[_g5] - 1 & 65535;
+		_g14[max_length] = _g14[max_length] - 1 & 65535;
 		overflow -= 2;
 		if(!(overflow > 0)) {
 			break;
@@ -4453,7 +2176,7 @@ pako_zlib_Trees.gen_bitlen = function(s,desc) {
 	while(bits != 0) {
 		n = s.bl_count[bits];
 		while(n != 0) {
-			m = s.heap[--h1];
+			m = s.heap[--h];
 			if(m > max_code) {
 				continue;
 			}
@@ -4467,135 +2190,106 @@ pako_zlib_Trees.gen_bitlen = function(s,desc) {
 	}
 };
 pako_zlib_Trees.gen_codes = function(tree,max_code,bl_count) {
-	var this1 = new Array(16);
-	var next_code = this1;
+	var next_code = new Array(16);
 	var code = 0;
-	var bits;
-	var n;
 	var _g1 = 1;
-	var _g = 16;
-	while(_g1 < _g) {
-		var bits1 = _g1++;
-		code = code + bl_count[bits1 - 1] << 1;
-		next_code[bits1] = code;
+	while(_g1 < 16) {
+		var bits = _g1++;
+		code = code + bl_count[bits - 1] << 1;
+		next_code[bits] = code;
 	}
 	var _g11 = 0;
-	var _g2 = max_code + 1;
-	while(_g11 < _g2) {
-		var n1 = _g11++;
-		var len = tree[n1 * 2 + 1];
+	var _g = max_code + 1;
+	while(_g11 < _g) {
+		var n = _g11++;
+		var len = tree[n * 2 + 1];
 		if(len == 0) {
 			continue;
 		}
-		tree[n1 * 2] = pako_zlib_Trees.bi_reverse(next_code[len],len) & 65535;
-		var _g21 = len;
-		var _g3 = next_code;
-		_g3[_g21] = _g3[_g21] + 1;
+		tree[n * 2] = pako_zlib_Trees.bi_reverse(next_code[len],len) & 65535;
+		next_code[len] = next_code[len] + 1;
 	}
 };
 pako_zlib_Trees.tr_static_init = function() {
-	var bits;
-	var this1 = new Uint16Array(16);
-	var bl_count = this1;
+	var bl_count = new Uint16Array(16);
 	var length = 0;
 	var _g1 = 0;
-	var _g = 28;
-	while(_g1 < _g) {
+	while(_g1 < 28) {
 		var code = _g1++;
 		pako_zlib_Trees.base_length[code] = length & 65535;
 		var _g3 = 0;
 		var _g2 = 1 << pako_zlib_Trees.extra_lbits[code];
 		while(_g3 < _g2) {
-			var n = _g3++;
+			++_g3;
 			pako_zlib_Trees._length_code[length++] = code & 65535;
 		}
 	}
-	var code1 = 28;
-	pako_zlib_Trees._length_code[length - 1] = code1 & 65535;
+	pako_zlib_Trees._length_code[length - 1] = 28;
 	var dist = 0;
-	var _g4 = 0;
-	while(_g4 < 16) {
-		var code2 = _g4++;
-		pako_zlib_Trees.base_dist[code2] = dist & 65535;
+	var _g = 0;
+	while(_g < 16) {
+		var code1 = _g++;
+		pako_zlib_Trees.base_dist[code1] = dist & 65535;
 		var _g21 = 0;
-		var _g11 = 1 << pako_zlib_Trees.extra_dbits[code2];
+		var _g11 = 1 << pako_zlib_Trees.extra_dbits[code1];
 		while(_g21 < _g11) {
-			var n1 = _g21++;
-			pako_zlib_Trees._dist_code[dist++] = code2 & 65535;
+			++_g21;
+			pako_zlib_Trees._dist_code[dist++] = code1 & 65535;
 		}
 	}
 	dist >>= 7;
-	var _g5 = 16;
-	while(_g5 < 30) {
-		var code3 = _g5++;
-		pako_zlib_Trees.base_dist[code3] = dist << 7 & 65535;
+	var _g4 = 16;
+	while(_g4 < 30) {
+		var code2 = _g4++;
+		pako_zlib_Trees.base_dist[code2] = dist << 7 & 65535;
 		var _g22 = 0;
-		var _g12 = 1 << pako_zlib_Trees.extra_dbits[code3] - 7;
+		var _g12 = 1 << pako_zlib_Trees.extra_dbits[code2] - 7;
 		while(_g22 < _g12) {
-			var n2 = _g22++;
-			pako_zlib_Trees._dist_code[256 + dist++] = code3 & 65535;
+			++_g22;
+			pako_zlib_Trees._dist_code[256 + dist++] = code2 & 65535;
 		}
 	}
 	var _g13 = 0;
-	var _g6 = 16;
-	while(_g13 < _g6) {
-		var bits1 = _g13++;
-		bl_count[bits1] = 0;
+	while(_g13 < 16) bl_count[_g13++] = 0;
+	var n = 0;
+	while(n <= 143) {
+		pako_zlib_Trees.static_ltree[n * 2 + 1] = 8;
+		++n;
+		bl_count[8] = bl_count[8] + 1 & 65535;
 	}
-	var n3 = 0;
-	while(n3 <= 143) {
-		pako_zlib_Trees.static_ltree[n3 * 2 + 1] = 8;
-		++n3;
-		var _g7 = bl_count;
-		_g7[8] = _g7[8] + 1 & 65535;
+	while(n <= 255) {
+		pako_zlib_Trees.static_ltree[n * 2 + 1] = 9;
+		++n;
+		bl_count[9] = bl_count[9] + 1 & 65535;
 	}
-	while(n3 <= 255) {
-		pako_zlib_Trees.static_ltree[n3 * 2 + 1] = 9;
-		++n3;
-		var _g8 = bl_count;
-		_g8[9] = _g8[9] + 1 & 65535;
+	while(n <= 279) {
+		pako_zlib_Trees.static_ltree[n * 2 + 1] = 7;
+		++n;
+		bl_count[7] = bl_count[7] + 1 & 65535;
 	}
-	while(n3 <= 279) {
-		pako_zlib_Trees.static_ltree[n3 * 2 + 1] = 7;
-		++n3;
-		var _g9 = bl_count;
-		_g9[7] = _g9[7] + 1 & 65535;
-	}
-	while(n3 <= 287) {
-		pako_zlib_Trees.static_ltree[n3 * 2 + 1] = 8;
-		++n3;
-		var _g10 = bl_count;
-		_g10[8] = _g10[8] + 1 & 65535;
+	while(n <= 287) {
+		pako_zlib_Trees.static_ltree[n * 2 + 1] = 8;
+		++n;
+		bl_count[8] = bl_count[8] + 1 & 65535;
 	}
 	pako_zlib_Trees.gen_codes(pako_zlib_Trees.static_ltree,287,bl_count);
-	var _g14 = 0;
-	while(_g14 < 30) {
-		var n4 = _g14++;
-		pako_zlib_Trees.static_dtree[n4 * 2 + 1] = 5;
-		pako_zlib_Trees.static_dtree[n4 * 2] = pako_zlib_Trees.bi_reverse(n4,5) & 65535;
+	var _g5 = 0;
+	while(_g5 < 30) {
+		var n1 = _g5++;
+		pako_zlib_Trees.static_dtree[n1 * 2 + 1] = 5;
+		pako_zlib_Trees.static_dtree[n1 * 2] = pako_zlib_Trees.bi_reverse(n1,5) & 65535;
 	}
 	pako_zlib_Trees.static_l_desc = new pako_zlib_StaticTreeDesc(pako_zlib_Trees.static_ltree,pako_zlib_Trees.extra_lbits,257,286,15);
 	pako_zlib_Trees.static_d_desc = new pako_zlib_StaticTreeDesc(pako_zlib_Trees.static_dtree,pako_zlib_Trees.extra_dbits,0,30,15);
-	var this2 = new Uint16Array(0);
-	pako_zlib_Trees.static_bl_desc = new pako_zlib_StaticTreeDesc(this2,pako_zlib_Trees.extra_blbits,0,19,7);
+	pako_zlib_Trees.static_bl_desc = new pako_zlib_StaticTreeDesc(new Uint16Array(0),pako_zlib_Trees.extra_blbits,0,19,7);
 };
 pako_zlib_Trees.init_block = function(s) {
-	var n;
 	var _g = 0;
-	while(_g < 286) {
-		var n1 = _g++;
-		s.dyn_ltree[n1 * 2] = 0;
-	}
+	while(_g < 286) s.dyn_ltree[_g++ * 2] = 0;
 	var _g1 = 0;
-	while(_g1 < 30) {
-		var n2 = _g1++;
-		s.dyn_dtree[n2 * 2] = 0;
-	}
+	while(_g1 < 30) s.dyn_dtree[_g1++ * 2] = 0;
 	var _g2 = 0;
-	while(_g2 < 19) {
-		var n3 = _g2++;
-		s.bl_tree[n3 * 2] = 0;
-	}
+	while(_g2 < 19) s.bl_tree[_g2++ * 2] = 0;
 	s.dyn_ltree[512] = 1;
 	s.opt_len = s.static_len = 0;
 	s.last_lit = s.matches = 0;
@@ -4610,34 +2304,6 @@ pako_zlib_Trees.bi_windup = function(s) {
 	}
 	s.bi_buf = 0;
 	s.bi_valid = 0;
-};
-pako_zlib_Trees.copy_block = function(s,buf,len,header) {
-	pako_zlib_Trees.bi_windup(s);
-	if(header) {
-		s.pending_buf[s.pending++] = len & 255 & 255;
-		s.pending_buf[s.pending++] = len >>> 8 & 255 & 255;
-		var w = ~len;
-		s.pending_buf[s.pending++] = w & 255 & 255;
-		s.pending_buf[s.pending++] = w >>> 8 & 255 & 255;
-	}
-	var dest = s.pending_buf;
-	var src = s.window;
-	var dest_offs = s.pending;
-	haxe_io_Bytes.ofData(dest.buffer).blit(dest.byteOffset + dest_offs,haxe_io_Bytes.ofData(src.buffer),src.byteOffset + buf,len);
-	s.pending += len;
-};
-pako_zlib_Trees.smaller = function(tree,n,m,depth) {
-	var _n2 = n * 2;
-	var _m2 = m * 2;
-	if(tree[_n2] >= tree[_m2]) {
-		if(tree[_n2] == tree[_m2]) {
-			return depth[n] <= depth[m];
-		} else {
-			return false;
-		}
-	} else {
-		return true;
-	}
 };
 pako_zlib_Trees.pqdownheap = function(s,tree,k) {
 	var v = s.heap[k];
@@ -4713,22 +2379,20 @@ pako_zlib_Trees.build_tree = function(s,desc) {
 	var stree = desc.stat_desc.static_tree;
 	var has_stree = desc.stat_desc.has_stree;
 	var elems = desc.stat_desc.elems;
-	var n;
 	var m;
 	var max_code = -1;
 	var node;
 	s.heap_len = 0;
 	s.heap_max = 573;
 	var _g1 = 0;
-	var _g = elems;
-	while(_g1 < _g) {
-		var n1 = _g1++;
-		if(tree[n1 * 2] != 0) {
-			max_code = n1;
-			s.heap[++s.heap_len] = max_code & 65535;
-			s.depth[n1] = 0;
+	while(_g1 < elems) {
+		var n = _g1++;
+		if(tree[n * 2] != 0) {
+			max_code = n;
+			s.heap[++s.heap_len] = n & 65535;
+			s.depth[n] = 0;
 		} else {
-			tree[n1 * 2 + 1] = 0;
+			tree[n * 2 + 1] = 0;
 		}
 	}
 	while(s.heap_len < 2) {
@@ -4741,22 +2405,22 @@ pako_zlib_Trees.build_tree = function(s,desc) {
 		}
 	}
 	desc.max_code = max_code;
-	var n2 = s.heap_len >> 1;
-	while(n2 >= 1) {
-		pako_zlib_Trees.pqdownheap(s,tree,n2);
-		--n2;
+	var n1 = s.heap_len >> 1;
+	while(n1 >= 1) {
+		pako_zlib_Trees.pqdownheap(s,tree,n1);
+		--n1;
 	}
 	node = elems;
 	while(true) {
-		n2 = s.heap[1];
+		n1 = s.heap[1];
 		s.heap[1] = s.heap[s.heap_len--] & 65535;
 		pako_zlib_Trees.pqdownheap(s,tree,1);
 		m = s.heap[1];
-		s.heap[--s.heap_max] = n2 & 65535;
+		s.heap[--s.heap_max] = n1 & 65535;
 		s.heap[--s.heap_max] = m & 65535;
-		tree[node * 2] = tree[n2 * 2] + tree[m * 2] & 65535;
-		s.depth[node] = (s.depth[n2] >= s.depth[m] ? s.depth[n2] : s.depth[m]) + 1 & 65535;
-		tree[n2 * 2 + 1] = (tree[m * 2 + 1] = node & 65535) & 65535;
+		tree[node * 2] = tree[n1 * 2] + tree[m * 2] & 65535;
+		s.depth[node] = (s.depth[n1] >= s.depth[m] ? s.depth[n1] : s.depth[m]) + 1 & 65535;
+		tree[n1 * 2 + 1] = (tree[m * 2 + 1] = node & 65535) & 65535;
 		s.heap[1] = node++ & 65535;
 		pako_zlib_Trees.pqdownheap(s,tree,1);
 		if(!(s.heap_len >= 2)) {
@@ -4769,7 +2433,6 @@ pako_zlib_Trees.build_tree = function(s,desc) {
 	pako_zlib_Trees.gen_codes(tree,max_code,s.bl_count);
 };
 pako_zlib_Trees.scan_tree = function(s,tree,max_code) {
-	var n;
 	var prevlen = -1;
 	var curlen;
 	var nextlen = tree[1];
@@ -4784,9 +2447,8 @@ pako_zlib_Trees.scan_tree = function(s,tree,max_code) {
 	var _g1 = 0;
 	var _g = max_code + 1;
 	while(_g1 < _g) {
-		var n1 = _g1++;
 		curlen = nextlen;
-		nextlen = tree[(n1 + 1) * 2 + 1];
+		nextlen = tree[(_g1++ + 1) * 2 + 1];
 		if(++count < max_count && curlen == nextlen) {
 			continue;
 		} else if(count < min_count) {
@@ -4823,7 +2485,6 @@ pako_zlib_Trees.scan_tree = function(s,tree,max_code) {
 	}
 };
 pako_zlib_Trees.send_tree = function(s,tree,max_code) {
-	var n;
 	var prevlen = -1;
 	var curlen;
 	var nextlen = tree[1];
@@ -4837,9 +2498,8 @@ pako_zlib_Trees.send_tree = function(s,tree,max_code) {
 	var _g1 = 0;
 	var _g = max_code + 1;
 	while(_g1 < _g) {
-		var n1 = _g1++;
 		curlen = nextlen;
-		nextlen = tree[(n1 + 1) * 2 + 1];
+		nextlen = tree[(_g1++ + 1) * 2 + 1];
 		if(++count < max_count && curlen == nextlen) {
 			continue;
 		} else if(count < min_count) {
@@ -4883,31 +2543,25 @@ pako_zlib_Trees.send_tree = function(s,tree,max_code) {
 	}
 };
 pako_zlib_Trees.build_bl_tree = function(s) {
-	var max_blindex;
 	pako_zlib_Trees.scan_tree(s,s.dyn_ltree,s.l_desc.max_code);
 	pako_zlib_Trees.scan_tree(s,s.dyn_dtree,s.d_desc.max_code);
 	pako_zlib_Trees.build_tree(s,s.bl_desc);
-	var max_blindex1 = 18;
-	while(max_blindex1 >= 3) {
-		if(s.bl_tree[pako_zlib_Trees.bl_order[max_blindex1] * 2 + 1] != 0) {
+	var max_blindex = 18;
+	while(max_blindex >= 3) {
+		if(s.bl_tree[pako_zlib_Trees.bl_order[max_blindex] * 2 + 1] != 0) {
 			break;
 		}
-		--max_blindex1;
+		--max_blindex;
 	}
-	s.opt_len += 3 * (max_blindex1 + 1) + 5 + 5 + 4;
-	return max_blindex1;
+	s.opt_len += 3 * (max_blindex + 1) + 5 + 5 + 4;
+	return max_blindex;
 };
 pako_zlib_Trees.send_all_trees = function(s,lcodes,dcodes,blcodes) {
-	var rank;
 	pako_zlib_Trees.send_bits(s,lcodes - 257,5);
 	pako_zlib_Trees.send_bits(s,dcodes - 1,5);
 	pako_zlib_Trees.send_bits(s,blcodes - 4,4);
 	var _g1 = 0;
-	var _g = blcodes;
-	while(_g1 < _g) {
-		var rank1 = _g1++;
-		pako_zlib_Trees.send_bits(s,s.bl_tree[pako_zlib_Trees.bl_order[rank1] * 2 + 1],3);
-	}
+	while(_g1 < blcodes) pako_zlib_Trees.send_bits(s,s.bl_tree[pako_zlib_Trees.bl_order[_g1++] * 2 + 1],3);
 	pako_zlib_Trees.send_tree(s,s.dyn_ltree,lcodes - 1);
 	pako_zlib_Trees.send_tree(s,s.dyn_dtree,dcodes - 1);
 };
@@ -4925,11 +2579,8 @@ pako_zlib_Trees.detect_data_type = function(s) {
 		return 1;
 	}
 	var _g = 32;
-	while(_g < 256) {
-		var n1 = _g++;
-		if(s.dyn_ltree[n1 * 2] != 0) {
-			return 1;
-		}
+	while(_g < 256) if(s.dyn_ltree[_g++ * 2] != 0) {
+		return 1;
 	}
 	return 0;
 };
@@ -4944,26 +2595,6 @@ pako_zlib_Trees._tr_init = function(s) {
 	s.bi_buf = 0;
 	s.bi_valid = 0;
 	pako_zlib_Trees.init_block(s);
-};
-pako_zlib_Trees._tr_stored_block = function(s,buf,stored_len,last) {
-	pako_zlib_Trees.send_bits(s,last ? 1 : 0,3);
-	pako_zlib_Trees.bi_windup(s);
-	s.pending_buf[s.pending++] = stored_len & 255 & 255;
-	s.pending_buf[s.pending++] = stored_len >>> 8 & 255 & 255;
-	var w = ~stored_len;
-	s.pending_buf[s.pending++] = w & 255 & 255;
-	s.pending_buf[s.pending++] = w >>> 8 & 255 & 255;
-	var dest = s.pending_buf;
-	var src = s.window;
-	var dest_offs = s.pending;
-	haxe_io_Bytes.ofData(dest.buffer).blit(dest.byteOffset + dest_offs,haxe_io_Bytes.ofData(src.buffer),src.byteOffset + buf,stored_len);
-	s.pending += stored_len;
-};
-pako_zlib_Trees._tr_align = function(s) {
-	pako_zlib_Trees.send_bits(s,2,3);
-	var tree = pako_zlib_Trees.static_ltree;
-	pako_zlib_Trees.send_bits(s,tree[512],tree[513]);
-	pako_zlib_Trees.bi_flush(s);
 };
 pako_zlib_Trees._tr_flush_block = function(s,buf,stored_len,last) {
 	var opt_lenb;
@@ -5011,27 +2642,6 @@ pako_zlib_Trees._tr_flush_block = function(s,buf,stored_len,last) {
 		pako_zlib_Trees.bi_windup(s);
 	}
 };
-pako_zlib_Trees._tr_tally = function(s,dist,lc) {
-	s.pending_buf[s.d_buf + s.last_lit * 2] = dist >>> 8 & 255 & 255;
-	s.pending_buf[s.d_buf + s.last_lit * 2 + 1] = dist & 255 & 255;
-	s.pending_buf[s.l_buf + s.last_lit] = lc & 255 & 255;
-	s.last_lit++;
-	if(dist == 0) {
-		var _g = lc * 2;
-		var _g1 = s.dyn_ltree;
-		_g1[_g] = _g1[_g] + 1 & 65535;
-	} else {
-		s.matches++;
-		--dist;
-		var _g2 = (pako_zlib_Trees._length_code[lc] + 256 + 1) * 2;
-		var _g11 = s.dyn_ltree;
-		_g11[_g2] = _g11[_g2] + 1 & 65535;
-		var _g3 = (dist < 256 ? pako_zlib_Trees._dist_code[dist] : pako_zlib_Trees._dist_code[256 + (dist >>> 7)]) * 2;
-		var _g12 = s.dyn_dtree;
-		_g12[_g3] = _g12[_g3] + 1 & 65535;
-	}
-	return s.last_lit == s.lit_bufsize - 1;
-};
 var pako_zlib_Config = function(good_length,max_lazy,nice_length,max_chain,func) {
 	this.good_length = good_length;
 	this.max_lazy = max_lazy;
@@ -5042,13 +2652,6 @@ var pako_zlib_Config = function(good_length,max_lazy,nice_length,max_chain,func)
 pako_zlib_Config.__name__ = true;
 var pako_zlib_Deflate = function() { };
 pako_zlib_Deflate.__name__ = true;
-pako_zlib_Deflate.err = function(strm,errorCode) {
-	strm.msg = pako_zlib_Messages.get(errorCode);
-	return errorCode;
-};
-pako_zlib_Deflate.rank = function(f) {
-	return (f << 1) - (f > 4 ? 9 : 0);
-};
 pako_zlib_Deflate.flush_pending = function(strm) {
 	var s = strm.deflateState;
 	var len = s.pending;
@@ -5071,18 +2674,6 @@ pako_zlib_Deflate.flush_pending = function(strm) {
 	if(s.pending == 0) {
 		s.pending_out = 0;
 	}
-};
-pako_zlib_Deflate.flush_block_only = function(s,last) {
-	pako_zlib_Trees._tr_flush_block(s,s.block_start >= 0 ? s.block_start : -1,s.strstart - s.block_start,last);
-	s.block_start = s.strstart;
-	pako_zlib_Deflate.flush_pending(s.strm);
-};
-pako_zlib_Deflate.put_byte = function(s,b) {
-	s.pending_buf[s.pending++] = b & 255;
-};
-pako_zlib_Deflate.putShortMSB = function(s,b) {
-	s.pending_buf[s.pending++] = b >>> 8 & 255 & 255;
-	s.pending_buf[s.pending++] = b & 255 & 255;
 };
 pako_zlib_Deflate.read_buf = function(strm,buf,start,size) {
 	var len = strm.avail_in;
@@ -5148,8 +2739,8 @@ pako_zlib_Deflate.longest_match = function(s,cur_match) {
 			if(len >= nice_match) {
 				break;
 			}
-			scan_end1 = _win[scan + best_len - 1];
-			scan_end = _win[scan + best_len];
+			scan_end1 = _win[scan + len - 1];
+			scan_end = _win[scan + len];
 		}
 		cur_match = prev[cur_match & wmask];
 		if(!(cur_match > limit && --chain_length != 0)) {
@@ -5187,7 +2778,7 @@ pako_zlib_Deflate.fill_window = function(s) {
 				}
 			}
 			n = _w_size;
-			p = n;
+			p = _w_size;
 			while(true) {
 				m = s.prev[--p];
 				s.prev[p] = (m >= _w_size ? m - _w_size : 0) & 65535;
@@ -5224,7 +2815,7 @@ pako_zlib_Deflate.fill_window = function(s) {
 };
 pako_zlib_Deflate.deflate_stored = function(s,flush) {
 	var max_block_size = 65535;
-	if(max_block_size > s.pending_buf_size - 5) {
+	if(65535 > s.pending_buf_size - 5) {
 		max_block_size = s.pending_buf_size - 5;
 	}
 	while(true) {
@@ -5343,26 +2934,14 @@ pako_zlib_Deflate.deflate_fast = function(s,flush) {
 				s.ins_h = (s.ins_h << s.hash_shift ^ s.window[s.strstart + 1]) & s.hash_mask;
 			}
 		} else {
-			var dist1 = 0;
 			var lc1 = s.window[s.strstart];
-			s.pending_buf[s.d_buf + s.last_lit * 2] = dist1 >>> 8 & 255 & 255;
-			s.pending_buf[s.d_buf + s.last_lit * 2 + 1] = dist1 & 255 & 255;
+			s.pending_buf[s.d_buf + s.last_lit * 2] = 0;
+			s.pending_buf[s.d_buf + s.last_lit * 2 + 1] = 0;
 			s.pending_buf[s.l_buf + s.last_lit] = lc1 & 255 & 255;
 			s.last_lit++;
-			if(dist1 == 0) {
-				var _g4 = lc1 * 2;
-				var _g13 = s.dyn_ltree;
-				_g13[_g4] = _g13[_g4] + 1 & 65535;
-			} else {
-				s.matches++;
-				--dist1;
-				var _g5 = (pako_zlib_Trees._length_code[lc1] + 256 + 1) * 2;
-				var _g14 = s.dyn_ltree;
-				_g14[_g5] = _g14[_g5] + 1 & 65535;
-				var _g6 = (dist1 < 256 ? pako_zlib_Trees._dist_code[dist1] : pako_zlib_Trees._dist_code[256 + (dist1 >>> 7)]) * 2;
-				var _g15 = s.dyn_dtree;
-				_g15[_g6] = _g15[_g6] + 1 & 65535;
-			}
+			var _g4 = lc1 * 2;
+			var _g13 = s.dyn_ltree;
+			_g13[_g4] = _g13[_g4] + 1 & 65535;
 			bflush = s.last_lit == s.lit_bufsize - 1;
 			s.lookahead--;
 			s.strstart++;
@@ -5472,26 +3051,14 @@ pako_zlib_Deflate.deflate_slow = function(s,flush) {
 				}
 			}
 		} else if(s.match_available) {
-			var dist1 = 0;
 			var lc1 = s.window[s.strstart - 1];
-			s.pending_buf[s.d_buf + s.last_lit * 2] = dist1 >>> 8 & 255 & 255;
-			s.pending_buf[s.d_buf + s.last_lit * 2 + 1] = dist1 & 255 & 255;
+			s.pending_buf[s.d_buf + s.last_lit * 2] = 0;
+			s.pending_buf[s.d_buf + s.last_lit * 2 + 1] = 0;
 			s.pending_buf[s.l_buf + s.last_lit] = lc1 & 255 & 255;
 			s.last_lit++;
-			if(dist1 == 0) {
-				var _g4 = lc1 * 2;
-				var _g13 = s.dyn_ltree;
-				_g13[_g4] = _g13[_g4] + 1 & 65535;
-			} else {
-				s.matches++;
-				--dist1;
-				var _g5 = (pako_zlib_Trees._length_code[lc1] + 256 + 1) * 2;
-				var _g14 = s.dyn_ltree;
-				_g14[_g5] = _g14[_g5] + 1 & 65535;
-				var _g6 = (dist1 < 256 ? pako_zlib_Trees._dist_code[dist1] : pako_zlib_Trees._dist_code[256 + (dist1 >>> 7)]) * 2;
-				var _g15 = s.dyn_dtree;
-				_g15[_g6] = _g15[_g6] + 1 & 65535;
-			}
+			var _g4 = lc1 * 2;
+			var _g13 = s.dyn_ltree;
+			_g13[_g4] = _g13[_g4] + 1 & 65535;
 			bflush = s.last_lit == s.lit_bufsize - 1;
 			if(bflush) {
 				pako_zlib_Trees._tr_flush_block(s,s.block_start >= 0 ? s.block_start : -1,s.strstart - s.block_start,false);
@@ -5510,27 +3077,14 @@ pako_zlib_Deflate.deflate_slow = function(s,flush) {
 		}
 	}
 	if(s.match_available) {
-		var dist2 = 0;
 		var lc2 = s.window[s.strstart - 1];
-		s.pending_buf[s.d_buf + s.last_lit * 2] = dist2 >>> 8 & 255 & 255;
-		s.pending_buf[s.d_buf + s.last_lit * 2 + 1] = dist2 & 255 & 255;
+		s.pending_buf[s.d_buf + s.last_lit * 2] = 0;
+		s.pending_buf[s.d_buf + s.last_lit * 2 + 1] = 0;
 		s.pending_buf[s.l_buf + s.last_lit] = lc2 & 255 & 255;
 		s.last_lit++;
-		if(dist2 == 0) {
-			var _g7 = lc2 * 2;
-			var _g16 = s.dyn_ltree;
-			_g16[_g7] = _g16[_g7] + 1 & 65535;
-		} else {
-			s.matches++;
-			--dist2;
-			var _g8 = (pako_zlib_Trees._length_code[lc2] + 256 + 1) * 2;
-			var _g17 = s.dyn_ltree;
-			_g17[_g8] = _g17[_g8] + 1 & 65535;
-			var _g9 = (dist2 < 256 ? pako_zlib_Trees._dist_code[dist2] : pako_zlib_Trees._dist_code[256 + (dist2 >>> 7)]) * 2;
-			var _g18 = s.dyn_dtree;
-			_g18[_g9] = _g18[_g9] + 1 & 65535;
-		}
-		bflush = s.last_lit == s.lit_bufsize - 1;
+		var _g5 = lc2 * 2;
+		var _g14 = s.dyn_ltree;
+		_g14[_g5] = _g14[_g5] + 1 & 65535;
 		s.match_available = false;
 	}
 	s.insert = s.strstart < 2 ? s.strstart : 2;
@@ -5584,51 +3138,31 @@ pako_zlib_Deflate.deflate_rle = function(s,flush) {
 			}
 		}
 		if(s.match_length >= 3) {
-			var dist = 1;
 			var lc = s.match_length - 3;
-			s.pending_buf[s.d_buf + s.last_lit * 2] = dist >>> 8 & 255 & 255;
-			s.pending_buf[s.d_buf + s.last_lit * 2 + 1] = dist & 255 & 255;
+			s.pending_buf[s.d_buf + s.last_lit * 2] = 0;
+			s.pending_buf[s.d_buf + s.last_lit * 2 + 1] = 1;
 			s.pending_buf[s.l_buf + s.last_lit] = lc & 255 & 255;
 			s.last_lit++;
-			if(dist == 0) {
-				var _g = lc * 2;
-				var _g1 = s.dyn_ltree;
-				_g1[_g] = _g1[_g] + 1 & 65535;
-			} else {
-				s.matches++;
-				--dist;
-				var _g2 = (pako_zlib_Trees._length_code[lc] + 256 + 1) * 2;
-				var _g11 = s.dyn_ltree;
-				_g11[_g2] = _g11[_g2] + 1 & 65535;
-				var _g3 = (dist < 256 ? pako_zlib_Trees._dist_code[dist] : pako_zlib_Trees._dist_code[256 + (dist >>> 7)]) * 2;
-				var _g12 = s.dyn_dtree;
-				_g12[_g3] = _g12[_g3] + 1 & 65535;
-			}
+			s.matches++;
+			var _g = (pako_zlib_Trees._length_code[lc] + 256 + 1) * 2;
+			var _g1 = s.dyn_ltree;
+			_g1[_g] = _g1[_g] + 1 & 65535;
+			var _g2 = pako_zlib_Trees._dist_code[0] * 2;
+			var _g11 = s.dyn_dtree;
+			_g11[_g2] = _g11[_g2] + 1 & 65535;
 			bflush = s.last_lit == s.lit_bufsize - 1;
 			s.lookahead -= s.match_length;
 			s.strstart += s.match_length;
 			s.match_length = 0;
 		} else {
-			var dist1 = 0;
 			var lc1 = s.window[s.strstart];
-			s.pending_buf[s.d_buf + s.last_lit * 2] = dist1 >>> 8 & 255 & 255;
-			s.pending_buf[s.d_buf + s.last_lit * 2 + 1] = dist1 & 255 & 255;
+			s.pending_buf[s.d_buf + s.last_lit * 2] = 0;
+			s.pending_buf[s.d_buf + s.last_lit * 2 + 1] = 0;
 			s.pending_buf[s.l_buf + s.last_lit] = lc1 & 255 & 255;
 			s.last_lit++;
-			if(dist1 == 0) {
-				var _g4 = lc1 * 2;
-				var _g13 = s.dyn_ltree;
-				_g13[_g4] = _g13[_g4] + 1 & 65535;
-			} else {
-				s.matches++;
-				--dist1;
-				var _g5 = (pako_zlib_Trees._length_code[lc1] + 256 + 1) * 2;
-				var _g14 = s.dyn_ltree;
-				_g14[_g5] = _g14[_g5] + 1 & 65535;
-				var _g6 = (dist1 < 256 ? pako_zlib_Trees._dist_code[dist1] : pako_zlib_Trees._dist_code[256 + (dist1 >>> 7)]) * 2;
-				var _g15 = s.dyn_dtree;
-				_g15[_g6] = _g15[_g6] + 1 & 65535;
-			}
+			var _g3 = lc1 * 2;
+			var _g12 = s.dyn_ltree;
+			_g12[_g3] = _g12[_g3] + 1 & 65535;
 			bflush = s.last_lit == s.lit_bufsize - 1;
 			s.lookahead--;
 			s.strstart++;
@@ -5675,26 +3209,14 @@ pako_zlib_Deflate.deflate_huff = function(s,flush) {
 			}
 		}
 		s.match_length = 0;
-		var dist = 0;
 		var lc = s.window[s.strstart];
-		s.pending_buf[s.d_buf + s.last_lit * 2] = dist >>> 8 & 255 & 255;
-		s.pending_buf[s.d_buf + s.last_lit * 2 + 1] = dist & 255 & 255;
+		s.pending_buf[s.d_buf + s.last_lit * 2] = 0;
+		s.pending_buf[s.d_buf + s.last_lit * 2 + 1] = 0;
 		s.pending_buf[s.l_buf + s.last_lit] = lc & 255 & 255;
 		s.last_lit++;
-		if(dist == 0) {
-			var _g = lc * 2;
-			var _g1 = s.dyn_ltree;
-			_g1[_g] = _g1[_g] + 1 & 65535;
-		} else {
-			s.matches++;
-			--dist;
-			var _g2 = (pako_zlib_Trees._length_code[lc] + 256 + 1) * 2;
-			var _g11 = s.dyn_ltree;
-			_g11[_g2] = _g11[_g2] + 1 & 65535;
-			var _g3 = (dist < 256 ? pako_zlib_Trees._dist_code[dist] : pako_zlib_Trees._dist_code[256 + (dist >>> 7)]) * 2;
-			var _g12 = s.dyn_dtree;
-			_g12[_g3] = _g12[_g3] + 1 & 65535;
-		}
+		var _g = lc * 2;
+		var _g1 = s.dyn_ltree;
+		_g1[_g] = _g1[_g] + 1 & 65535;
 		bflush = s.last_lit == s.lit_bufsize - 1;
 		s.lookahead--;
 		s.strstart++;
@@ -5815,28 +3337,18 @@ pako_zlib_Deflate.deflateInit2 = function(strm,level,method,windowBits,memLevel,
 	s.hash_size = 1 << s.hash_bits;
 	s.hash_mask = s.hash_size - 1;
 	s.hash_shift = ~(~((s.hash_bits + 3 - 1) / 3 | 0));
-	var this1 = new Uint8Array(s.w_size * 2);
-	s.window = this1;
-	var this2 = new Uint16Array(s.hash_size);
-	s.head = this2;
-	var this3 = new Uint16Array(s.w_size);
-	s.prev = this3;
+	s.window = new Uint8Array(s.w_size * 2);
+	s.head = new Uint16Array(s.hash_size);
+	s.prev = new Uint16Array(s.w_size);
 	s.lit_bufsize = 1 << memLevel + 6;
 	s.pending_buf_size = s.lit_bufsize * 4;
-	var this4 = new Uint8Array(s.pending_buf_size);
-	s.pending_buf = this4;
+	s.pending_buf = new Uint8Array(s.pending_buf_size);
 	s.d_buf = s.lit_bufsize;
 	s.l_buf = 3 * s.lit_bufsize;
 	s.level = level;
 	s.strategy = strategy;
 	s.method = method;
 	return pako_zlib_Deflate.deflateReset(strm);
-};
-pako_zlib_Deflate.deflateInit = function(strm,level) {
-	if(level == null) {
-		level = 0;
-	}
-	return pako_zlib_Deflate.deflateInit2(strm,level,8,15,8,0);
 };
 pako_zlib_Deflate.deflate = function(strm,flush) {
 	var beg;
@@ -6073,9 +3585,8 @@ pako_zlib_Deflate.deflate = function(strm,flush) {
 				pako_zlib_Trees.bi_windup(s);
 				s.pending_buf[s.pending++] = 0;
 				s.pending_buf[s.pending++] = 0;
-				var w = -1;
-				s.pending_buf[s.pending++] = w & 255 & 255;
-				s.pending_buf[s.pending++] = w >>> 8 & 255 & 255;
+				s.pending_buf[s.pending++] = 255;
+				s.pending_buf[s.pending++] = 255;
 				var dest = s.pending_buf;
 				var src = s.window;
 				var dest_offs = s.pending;
@@ -6177,8 +3688,7 @@ pako_zlib_Deflate.deflateSetDictionary = function(strm,dictionary) {
 			s.block_start = 0;
 			s.insert = 0;
 		}
-		var this1 = new Uint8Array(s.w_size);
-		tmpDict = this1;
+		tmpDict = new Uint8Array(s.w_size);
 		var dest = tmpDict;
 		var src = dictionary;
 		var src_offs = dictLength - s.w_size;
@@ -6304,1721 +3814,15 @@ var pako_zlib_DeflateState = function() {
 };
 pako_zlib_DeflateState.__name__ = true;
 var pako_zlib_GZHeader = function() {
-	this.done = false;
 	this.hcrc = 0;
 	this.comment = "";
 	this.name = "";
-	this.extra_len = 0;
 	this.extra = null;
 	this.os = 0;
-	this.xflags = 0;
 	this.time = 0;
 	this.text = false;
 };
 pako_zlib_GZHeader.__name__ = true;
-var pako_zlib_InfFast = function() { };
-pako_zlib_InfFast.__name__ = true;
-pako_zlib_InfFast.inflate_fast = function(strm,start) {
-	var here;
-	var op;
-	var len;
-	var dist;
-	var from;
-	var from_source;
-	var state = strm.inflateState;
-	var _in = strm.next_in;
-	var input = strm.input;
-	var last = _in + (strm.avail_in - 5);
-	var _out = strm.next_out;
-	var output = strm.output;
-	var beg = _out - (start - strm.avail_out);
-	var end = _out + (strm.avail_out - 257);
-	var dmax = state.dmax;
-	var wsize = state.wsize;
-	var whave = state.whave;
-	var wnext = state.wnext;
-	var s_window = state.window;
-	var hold = state.hold;
-	var bits = state.bits;
-	var lcode = state.lencode;
-	var dcode = state.distcode;
-	var lmask = (1 << state.lenbits) - 1;
-	var dmask = (1 << state.distbits) - 1;
-	var exit_top = false;
-	while(!exit_top) {
-		exit_top = false;
-		if(bits < 15) {
-			hold += input[_in++] << bits;
-			bits += 8;
-			hold += input[_in++] << bits;
-			bits += 8;
-		}
-		here = lcode[hold & lmask];
-		while(true) {
-			op = here >>> 24;
-			hold >>>= op;
-			bits -= op;
-			op = here >>> 16 & 255;
-			if(op == 0) {
-				output[_out++] = here & 65535 & 255;
-			} else if((op & 16) != 0) {
-				len = here & 65535;
-				op &= 15;
-				if(op != 0) {
-					if(bits < op) {
-						hold += input[_in++] << bits;
-						bits += 8;
-					}
-					len += hold & (1 << op) - 1;
-					hold >>>= op;
-					bits -= op;
-				}
-				if(bits < 15) {
-					hold += input[_in++] << bits;
-					bits += 8;
-					hold += input[_in++] << bits;
-					bits += 8;
-				}
-				here = dcode[hold & dmask];
-				while(true) {
-					op = here >>> 24;
-					hold >>>= op;
-					bits -= op;
-					op = here >>> 16 & 255;
-					if((op & 16) != 0) {
-						dist = here & 65535;
-						op &= 15;
-						if(bits < op) {
-							hold += input[_in++] << bits;
-							bits += 8;
-							if(bits < op) {
-								hold += input[_in++] << bits;
-								bits += 8;
-							}
-						}
-						dist += hold & (1 << op) - 1;
-						if(dist > dmax) {
-							strm.msg = "invalid distance too far back";
-							state.mode = 30;
-							exit_top = true;
-							break;
-						}
-						hold >>>= op;
-						bits -= op;
-						op = _out - beg;
-						if(dist > op) {
-							op = dist - op;
-							if(op > whave) {
-								if(state.sane != 0) {
-									strm.msg = "invalid distance too far back";
-									state.mode = 30;
-									exit_top = true;
-									break;
-								}
-							}
-							from = 0;
-							from_source = s_window;
-							if(wnext == 0) {
-								from += wsize - op;
-								if(op < len) {
-									len -= op;
-									while(true) {
-										output[_out++] = s_window[from++] & 255;
-										if(!(--op != 0)) {
-											break;
-										}
-									}
-									from = _out - dist;
-									from_source = output;
-								}
-							} else if(wnext < op) {
-								from += wsize + wnext - op;
-								op -= wnext;
-								if(op < len) {
-									len -= op;
-									while(true) {
-										output[_out++] = s_window[from++] & 255;
-										if(!(--op != 0)) {
-											break;
-										}
-									}
-									from = 0;
-									if(wnext < len) {
-										op = wnext;
-										len -= op;
-										while(true) {
-											output[_out++] = s_window[from++] & 255;
-											if(!(--op != 0)) {
-												break;
-											}
-										}
-										from = _out - dist;
-										from_source = output;
-									}
-								}
-							} else {
-								from += wnext - op;
-								if(op < len) {
-									len -= op;
-									while(true) {
-										output[_out++] = s_window[from++] & 255;
-										if(!(--op != 0)) {
-											break;
-										}
-									}
-									from = _out - dist;
-									from_source = output;
-								}
-							}
-							while(len > 2) {
-								output[_out++] = from_source[from++] & 255;
-								output[_out++] = from_source[from++] & 255;
-								output[_out++] = from_source[from++] & 255;
-								len -= 3;
-							}
-							if(len != 0) {
-								output[_out++] = from_source[from++] & 255;
-								if(len > 1) {
-									output[_out++] = from_source[from++] & 255;
-								}
-							}
-						} else {
-							from = _out - dist;
-							while(true) {
-								output[_out++] = output[from++] & 255;
-								output[_out++] = output[from++] & 255;
-								output[_out++] = output[from++] & 255;
-								len -= 3;
-								if(!(len > 2)) {
-									break;
-								}
-							}
-							if(len != 0) {
-								output[_out++] = output[from++] & 255;
-								if(len > 1) {
-									output[_out++] = output[from++] & 255;
-								}
-							}
-						}
-					} else if((op & 64) == 0) {
-						here = dcode[(here & 65535) + (hold & (1 << op) - 1)];
-						continue;
-					} else {
-						strm.msg = "invalid distance code";
-						state.mode = 30;
-						exit_top = true;
-						break;
-					}
-					break;
-				}
-				if(exit_top) {
-					break;
-				}
-			} else if((op & 64) == 0) {
-				here = lcode[(here & 65535) + (hold & (1 << op) - 1)];
-				continue;
-			} else if((op & 32) != 0) {
-				state.mode = 12;
-				exit_top = true;
-				break;
-			} else {
-				strm.msg = "invalid literal/length code";
-				state.mode = 30;
-				exit_top = true;
-				break;
-			}
-			break;
-		}
-		if(exit_top) {
-			if(!(_in < last && _out < end)) {
-				break;
-			} else {
-				continue;
-			}
-		}
-		if(!(_in < last && _out < end)) {
-			break;
-		}
-	}
-	len = bits >> 3;
-	_in -= len;
-	bits -= len << 3;
-	hold &= (1 << bits) - 1;
-	strm.next_in = _in;
-	strm.next_out = _out;
-	strm.avail_in = _in < last ? 5 + (last - _in) : 5 - (_in - last);
-	strm.avail_out = _out < end ? 257 + (end - _out) : 257 - (_out - end);
-	state.hold = hold;
-	state.bits = bits;
-	return;
-};
-var pako_zlib_InfTrees = function() { };
-pako_zlib_InfTrees.__name__ = true;
-pako_zlib_InfTrees.inflate_table = function(type,lens,lens_index,codes,table,table_index,work,opts) {
-	var bits = 0;
-	var len = 0;
-	var sym = 0;
-	var min = 0;
-	var max = 0;
-	var root = 0;
-	var curr = 0;
-	var drop = 0;
-	var left = 0;
-	var used = 0;
-	var huff = 0;
-	var incr = 0;
-	var fill = 0;
-	var low = 0;
-	var mask = 0;
-	var next = 0;
-	var base = null;
-	var base_index = 0;
-	var end = 0;
-	var this1 = new Uint16Array(pako_zlib_InfTrees.MAXBITS + 1);
-	var count = this1;
-	var this2 = new Uint16Array(pako_zlib_InfTrees.MAXBITS + 1);
-	var offs = this2;
-	var extra = null;
-	var extra_index = 0;
-	bits = opts.bits;
-	var here_bits;
-	var here_op;
-	var here_val;
-	len = 0;
-	while(len <= pako_zlib_InfTrees.MAXBITS) {
-		count[len] = 0;
-		++len;
-	}
-	sym = 0;
-	while(sym < codes) {
-		var _g = lens[lens_index + sym];
-		var _g1 = count;
-		_g1[_g] = _g1[_g] + 1 & 65535;
-		++sym;
-	}
-	root = bits;
-	max = pako_zlib_InfTrees.MAXBITS;
-	while(max >= 1) {
-		if(count[max] != 0) {
-			break;
-		}
-		--max;
-	}
-	if(root > max) {
-		root = max;
-	}
-	if(max == 0) {
-		table[table_index++] = 20971520;
-		table[table_index++] = 20971520;
-		opts.bits = 1;
-		return 0;
-	}
-	min = 1;
-	while(min < max) {
-		if(count[min] != 0) {
-			break;
-		}
-		++min;
-	}
-	if(root < min) {
-		root = min;
-	}
-	left = 1;
-	len = 1;
-	while(len <= pako_zlib_InfTrees.MAXBITS) {
-		left <<= 1;
-		left -= count[len];
-		if(left < 0) {
-			return -1;
-		}
-		++len;
-	}
-	if(left > 0 && (type == pako_zlib_InfTrees.CODES || max != 1)) {
-		return -1;
-	}
-	offs[1] = 0;
-	len = 1;
-	while(len < pako_zlib_InfTrees.MAXBITS) {
-		offs[len + 1] = offs[len] + count[len] & 65535;
-		++len;
-	}
-	sym = 0;
-	while(sym < codes) {
-		if(lens[lens_index + sym] != 0) {
-			work[offs[lens[lens_index + sym]]] = sym & 65535;
-			var _g2 = lens[lens_index + sym];
-			var _g11 = offs;
-			_g11[_g2] = _g11[_g2] + 1 & 65535;
-		}
-		++sym;
-	}
-	if(type == pako_zlib_InfTrees.CODES) {
-		extra = work;
-		base = extra;
-		end = 19;
-	} else if(type == pako_zlib_InfTrees.LENS) {
-		base = pako_zlib_InfTrees.lbase;
-		base_index -= 257;
-		extra = pako_zlib_InfTrees.lext;
-		extra_index -= 257;
-		end = 256;
-	} else {
-		base = pako_zlib_InfTrees.dbase;
-		extra = pako_zlib_InfTrees.dext;
-		end = -1;
-	}
-	huff = 0;
-	sym = 0;
-	len = min;
-	next = table_index;
-	curr = root;
-	drop = 0;
-	low = -1;
-	used = 1 << root;
-	mask = used - 1;
-	if(type == pako_zlib_InfTrees.LENS && used > pako_zlib_InfTrees.ENOUGH_LENS || type == pako_zlib_InfTrees.DISTS && used > pako_zlib_InfTrees.ENOUGH_DISTS) {
-		return 1;
-	}
-	var i = 0;
-	while(true) {
-		++i;
-		here_bits = len - drop;
-		if(work[sym] < end) {
-			here_op = 0;
-			here_val = work[sym];
-		} else if(work[sym] > end) {
-			here_op = extra[extra_index + work[sym]];
-			here_val = base[base_index + work[sym]];
-		} else {
-			here_op = 96;
-			here_val = 0;
-		}
-		incr = 1 << len - drop;
-		fill = 1 << curr;
-		min = fill;
-		while(true) {
-			fill -= incr;
-			table[next + (huff >> drop) + fill] = here_bits << 24 | here_op << 16 | here_val | 0 | 0;
-			if(!(fill != 0)) {
-				break;
-			}
-		}
-		incr = 1 << len - 1;
-		while((huff & incr) != 0) incr >>= 1;
-		if(incr != 0) {
-			huff &= incr - 1;
-			huff += incr;
-		} else {
-			huff = 0;
-		}
-		++sym;
-		var _g3 = len;
-		var _g12 = count;
-		_g12[_g3] = _g12[_g3] - 1 & 65535;
-		if(count[len] == 0) {
-			if(len == max) {
-				break;
-			}
-			len = lens[lens_index + work[sym]];
-		}
-		if(len > root && (huff & mask) != low) {
-			if(drop == 0) {
-				drop = root;
-			}
-			next += min;
-			curr = len - drop;
-			left = 1 << curr;
-			while(curr + drop < max) {
-				left -= count[curr + drop];
-				if(left <= 0) {
-					break;
-				}
-				++curr;
-				left <<= 1;
-			}
-			used += 1 << curr;
-			if(type == pako_zlib_InfTrees.LENS && used > pako_zlib_InfTrees.ENOUGH_LENS || type == pako_zlib_InfTrees.DISTS && used > pako_zlib_InfTrees.ENOUGH_DISTS) {
-				return 1;
-			}
-			low = huff & mask;
-			table[low] = root << 24 | curr << 16 | next - table_index | 0 | 0;
-		}
-	}
-	if(huff != 0) {
-		table[next + huff] = len - drop << 24 | 4194304 | 0 | 0;
-	}
-	opts.bits = root;
-	return 0;
-};
-var pako_zlib_Inflate = function() { };
-pako_zlib_Inflate.__name__ = true;
-pako_zlib_Inflate.ZSWAP32 = function(q) {
-	return (q >>> 24 & 255) + (q >>> 8 & 65280) + ((q & 65280) << 8) + ((q & 255) << 24);
-};
-pako_zlib_Inflate.inflateResetKeep = function(strm) {
-	if(strm == null || strm.inflateState == null) {
-		return -2;
-	}
-	var state = strm.inflateState;
-	strm.total_in = strm.total_out = state.total = 0;
-	strm.msg = "";
-	if(state.wrap != 0) {
-		strm.adler = state.wrap & 1;
-	}
-	state.mode = 1;
-	state.last = false;
-	state.havedict = false;
-	state.dmax = 32768;
-	state.head = null;
-	state.hold = 0;
-	state.bits = 0;
-	var this1 = new Int32Array(852);
-	state.lencode = state.lendyn = this1;
-	var this2 = new Int32Array(592);
-	state.distcode = state.distdyn = this2;
-	state.sane = 1;
-	state.back = -1;
-	return 0;
-};
-pako_zlib_Inflate.inflateReset = function(strm) {
-	if(strm == null || strm.inflateState == null) {
-		return -2;
-	}
-	var state = strm.inflateState;
-	state.wsize = 0;
-	state.whave = 0;
-	state.wnext = 0;
-	return pako_zlib_Inflate.inflateResetKeep(strm);
-};
-pako_zlib_Inflate.inflateReset2 = function(strm,windowBits) {
-	var wrap;
-	if(strm == null || strm.inflateState == null) {
-		return -2;
-	}
-	var state = strm.inflateState;
-	if(windowBits < 0) {
-		wrap = 0;
-		windowBits = -windowBits;
-	} else {
-		wrap = (windowBits >> 4) + 1;
-		if(windowBits < 48) {
-			windowBits &= 15;
-		}
-	}
-	if(windowBits != 0 && (windowBits < 8 || windowBits > 15)) {
-		return -2;
-	}
-	if(state.window != null && state.wbits != windowBits) {
-		state.window = null;
-	}
-	state.wrap = wrap;
-	state.wbits = windowBits;
-	return pako_zlib_Inflate.inflateReset(strm);
-};
-pako_zlib_Inflate.inflateInit2 = function(strm,windowBits) {
-	if(strm == null) {
-		return -2;
-	}
-	var state = new pako_zlib_InflateState();
-	strm.inflateState = state;
-	state.window = null;
-	var ret = pako_zlib_Inflate.inflateReset2(strm,windowBits);
-	if(ret != 0) {
-		strm.inflateState = null;
-	}
-	return ret;
-};
-pako_zlib_Inflate.inflateInit = function(strm) {
-	return pako_zlib_Inflate.inflateInit2(strm,15);
-};
-pako_zlib_Inflate.fixedtables = function(state) {
-	if(pako_zlib_Inflate.virgin) {
-		var this1 = new Int32Array(512);
-		pako_zlib_Inflate.lenfix = this1;
-		var this2 = new Int32Array(32);
-		pako_zlib_Inflate.distfix = this2;
-		var sym = 0;
-		while(sym < 144) state.lens[sym++] = 8;
-		while(sym < 256) state.lens[sym++] = 9;
-		while(sym < 280) state.lens[sym++] = 7;
-		while(sym < 288) state.lens[sym++] = 8;
-		pako_zlib_InfTrees.inflate_table(1,state.lens,0,288,pako_zlib_Inflate.lenfix,0,state.work,{ bits : 9});
-		sym = 0;
-		while(sym < 32) state.lens[sym++] = 5;
-		pako_zlib_InfTrees.inflate_table(2,state.lens,0,32,pako_zlib_Inflate.distfix,0,state.work,{ bits : 5});
-		pako_zlib_Inflate.virgin = false;
-	}
-	state.lencode = pako_zlib_Inflate.lenfix;
-	state.lenbits = 9;
-	state.distcode = pako_zlib_Inflate.distfix;
-	state.distbits = 5;
-};
-pako_zlib_Inflate.updatewindow = function(strm,src,end,copy) {
-	var dist;
-	var state = strm.inflateState;
-	if(state.window == null) {
-		state.wsize = 1 << state.wbits;
-		state.wnext = 0;
-		state.whave = 0;
-		var this1 = new Uint8Array(state.wsize);
-		state.window = this1;
-	}
-	if(copy >= state.wsize) {
-		var dest = state.window;
-		var src1 = src;
-		var src_offs = end - state.wsize;
-		var len = state.wsize;
-		haxe_io_Bytes.ofData(dest.buffer).blit(dest.byteOffset,haxe_io_Bytes.ofData(src1.buffer),src1.byteOffset + src_offs,len);
-		state.wnext = 0;
-		state.whave = state.wsize;
-	} else {
-		dist = state.wsize - state.wnext;
-		if(dist > copy) {
-			dist = copy;
-		}
-		var dest1 = state.window;
-		var src2 = src;
-		var dest_offs = state.wnext;
-		haxe_io_Bytes.ofData(dest1.buffer).blit(dest1.byteOffset + dest_offs,haxe_io_Bytes.ofData(src2.buffer),src2.byteOffset + (end - copy),dist);
-		copy -= dist;
-		if(copy != 0) {
-			var dest2 = state.window;
-			var src3 = src;
-			haxe_io_Bytes.ofData(dest2.buffer).blit(dest2.byteOffset,haxe_io_Bytes.ofData(src3.buffer),src3.byteOffset + (end - copy),copy);
-			state.wnext = copy;
-			state.whave = state.wsize;
-		} else {
-			state.wnext += dist;
-			if(state.wnext == state.wsize) {
-				state.wnext = 0;
-			}
-			if(state.whave < state.wsize) {
-				state.whave += dist;
-			}
-		}
-	}
-	return 0;
-};
-pako_zlib_Inflate.inflate = function(strm,flush) {
-	var hold = 0;
-	var bits = 0;
-	var copy = 0;
-	var from;
-	var from_source;
-	var here = 0;
-	var here_bits = 0;
-	var here_op = 0;
-	var here_val = 0;
-	var last_bits;
-	var last_op;
-	var last_val;
-	var len = 0;
-	var this1 = new Uint8Array(4);
-	var hbuf = this1;
-	var opts;
-	var n;
-	var order = [16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];
-	if(strm == null || strm.inflateState == null || strm.output == null || strm.input == null && strm.avail_in != 0) {
-		return -2;
-	}
-	var state = strm.inflateState;
-	if(state.mode == 12) {
-		state.mode = 13;
-	}
-	var put = strm.next_out;
-	var output = strm.output;
-	var left = strm.avail_out;
-	var next = strm.next_in;
-	var input = strm.input;
-	var have = strm.avail_in;
-	hold = state.hold;
-	bits = state.bits;
-	var _in = have;
-	var _out = left;
-	var ret = 0;
-	var inf_leave = false;
-	_hx_loop1: while(!inf_leave) {
-		inf_leave = false;
-		var _g = state.mode;
-		switch(_g) {
-		case 1:
-			if(state.wrap == 0) {
-				state.mode = 13;
-				continue;
-			}
-			while(bits < 16) {
-				if(have == 0) {
-					inf_leave = true;
-					break;
-				}
-				--have;
-				hold += input[next++] << bits;
-				bits += 8;
-			}
-			if(inf_leave) {
-				break _hx_loop1;
-			}
-			if((state.wrap & 2) != 0 && hold == 35615) {
-				state.check = 0;
-				hbuf[0] = hold & 255 & 255;
-				hbuf[1] = hold >>> 8 & 255 & 255;
-				state.check = pako_zlib_CRC32.crc32(state.check,hbuf,2,0);
-				hold = 0;
-				bits = 0;
-				state.mode = 2;
-				continue;
-			}
-			state.flags = 0;
-			if(state.head != null) {
-				state.head.done = false;
-			}
-			if((state.wrap & 1) != 1 || (((hold & 255) << 8) + (hold >> 8)) % 31 != 0) {
-				strm.msg = "incorrect header check";
-				state.mode = 30;
-				continue;
-			}
-			if((hold & 15) != 8) {
-				strm.msg = "unknown compression method";
-				state.mode = 30;
-				continue;
-			}
-			hold >>>= 4;
-			bits -= 4;
-			len = (hold & 15) + 8;
-			if(state.wbits == 0) {
-				state.wbits = len;
-			} else if(len > state.wbits) {
-				strm.msg = "invalid window size";
-				state.mode = 30;
-				continue;
-			}
-			state.dmax = 1 << len;
-			strm.adler = state.check = 1;
-			state.mode = (hold & 512) != 0 ? 10 : 12;
-			hold = 0;
-			bits = 0;
-			break;
-		case 2:
-			while(bits < 16) {
-				if(have == 0) {
-					inf_leave = true;
-					break;
-				}
-				--have;
-				hold += input[next++] << bits;
-				bits += 8;
-			}
-			if(inf_leave) {
-				break _hx_loop1;
-			}
-			state.flags = hold;
-			if((state.flags & 255) != 8) {
-				strm.msg = "unknown compression method";
-				state.mode = 30;
-				continue;
-			}
-			if((state.flags & 57344) != 0) {
-				strm.msg = "unknown header flags set";
-				state.mode = 30;
-				continue;
-			}
-			if(state.head != null) {
-				state.head.text = (hold >> 8 & 1) == 1;
-			}
-			if((state.flags & 512) != 0) {
-				hbuf[0] = hold & 255 & 255;
-				hbuf[1] = hold >>> 8 & 255 & 255;
-				state.check = pako_zlib_CRC32.crc32(state.check,hbuf,2,0);
-			}
-			hold = 0;
-			bits = 0;
-			state.mode = 3;
-			break;
-		case 3:
-			while(bits < 32) {
-				if(have == 0) {
-					inf_leave = true;
-					break;
-				}
-				--have;
-				hold += input[next++] << bits;
-				bits += 8;
-			}
-			if(inf_leave) {
-				break _hx_loop1;
-			}
-			if(state.head != null) {
-				state.head.time = hold;
-			}
-			if((state.flags & 512) != 0) {
-				hbuf[0] = hold & 255 & 255;
-				hbuf[1] = hold >>> 8 & 255 & 255;
-				hbuf[2] = hold >>> 16 & 255 & 255;
-				hbuf[3] = hold >>> 24 & 255 & 255;
-				state.check = pako_zlib_CRC32.crc32(state.check,hbuf,4,0);
-			}
-			hold = 0;
-			bits = 0;
-			state.mode = 4;
-			break;
-		case 4:
-			while(bits < 16) {
-				if(have == 0) {
-					inf_leave = true;
-					break;
-				}
-				--have;
-				hold += input[next++] << bits;
-				bits += 8;
-			}
-			if(inf_leave) {
-				break _hx_loop1;
-			}
-			if(state.head != null) {
-				state.head.xflags = hold & 255;
-				state.head.os = hold >> 8;
-			}
-			if((state.flags & 512) != 0) {
-				hbuf[0] = hold & 255 & 255;
-				hbuf[1] = hold >>> 8 & 255 & 255;
-				state.check = pako_zlib_CRC32.crc32(state.check,hbuf,2,0);
-			}
-			hold = 0;
-			bits = 0;
-			state.mode = 5;
-			break;
-		case 5:
-			if((state.flags & 1024) != 0) {
-				while(bits < 16) {
-					if(have == 0) {
-						inf_leave = true;
-						break;
-					}
-					--have;
-					hold += input[next++] << bits;
-					bits += 8;
-				}
-				if(inf_leave) {
-					break _hx_loop1;
-				}
-				state.length = hold;
-				if(state.head != null) {
-					state.head.extra_len = hold;
-				}
-				if((state.flags & 512) != 0) {
-					hbuf[0] = hold & 255 & 255;
-					hbuf[1] = hold >>> 8 & 255 & 255;
-					state.check = pako_zlib_CRC32.crc32(state.check,hbuf,2,0);
-				}
-				hold = 0;
-				bits = 0;
-			} else if(state.head != null) {
-				state.head.extra = null;
-			}
-			state.mode = 6;
-			break;
-		case 6:
-			if((state.flags & 1024) != 0) {
-				copy = state.length;
-				if(copy > have) {
-					copy = have;
-				}
-				if(copy != 0) {
-					if(state.head != null) {
-						len = state.head.extra_len - state.length;
-						if(state.head.extra == null) {
-							var this2 = new Uint8Array(state.head.extra_len);
-							state.head.extra = this2;
-						}
-						var dest = state.head.extra;
-						var src = input;
-						haxe_io_Bytes.ofData(dest.buffer).blit(dest.byteOffset + len,haxe_io_Bytes.ofData(src.buffer),src.byteOffset + next,copy);
-					}
-					if((state.flags & 512) != 0) {
-						state.check = pako_zlib_CRC32.crc32(state.check,input,copy,next);
-					}
-					have -= copy;
-					next += copy;
-					state.length -= copy;
-				}
-				if(state.length != 0) {
-					inf_leave = true;
-					break _hx_loop1;
-				}
-			}
-			state.length = 0;
-			state.mode = 7;
-			break;
-		case 7:
-			if((state.flags & 2048) != 0) {
-				if(have == 0) {
-					inf_leave = true;
-					break _hx_loop1;
-				}
-				copy = 0;
-				while(true) {
-					len = input[next + copy++];
-					if(state.head != null && len != 0 && state.length < 65536) {
-						state.head.name += String.fromCharCode(len);
-					}
-					if(!(len != 0 && copy < have)) {
-						break;
-					}
-				}
-				if((state.flags & 512) != 0) {
-					state.check = pako_zlib_CRC32.crc32(state.check,input,copy,next);
-				}
-				have -= copy;
-				next += copy;
-				if(len != 0) {
-					inf_leave = true;
-					break _hx_loop1;
-				}
-			} else if(state.head != null) {
-				state.head.name = null;
-			}
-			state.length = 0;
-			state.mode = 8;
-			break;
-		case 8:
-			if((state.flags & 4096) != 0) {
-				if(have == 0) {
-					inf_leave = true;
-					break _hx_loop1;
-				}
-				copy = 0;
-				while(true) {
-					len = input[next + copy++];
-					if(state.head != null && len != 0 && state.length < 65536) {
-						state.head.comment += String.fromCharCode(len);
-					}
-					if(!(len != 0 && copy < have)) {
-						break;
-					}
-				}
-				if((state.flags & 512) != 0) {
-					state.check = pako_zlib_CRC32.crc32(state.check,input,copy,next);
-				}
-				have -= copy;
-				next += copy;
-				if(len != 0) {
-					inf_leave = true;
-					break _hx_loop1;
-				}
-			} else if(state.head != null) {
-				state.head.comment = null;
-			}
-			state.mode = 9;
-			break;
-		case 9:
-			if((state.flags & 512) != 0) {
-				while(bits < 16) {
-					if(have == 0) {
-						inf_leave = true;
-						break;
-					}
-					--have;
-					hold += input[next++] << bits;
-					bits += 8;
-				}
-				if(inf_leave) {
-					break _hx_loop1;
-				}
-				if(hold != (state.check & 65535)) {
-					strm.msg = "header crc mismatch";
-					state.mode = 30;
-					continue;
-				}
-				hold = 0;
-				bits = 0;
-			}
-			if(state.head != null) {
-				state.head.hcrc = state.flags >> 9 & 1;
-				state.head.done = true;
-			}
-			strm.adler = state.check = 0;
-			state.mode = 12;
-			break;
-		case 10:
-			while(bits < 32) {
-				if(have == 0) {
-					inf_leave = true;
-					break;
-				}
-				--have;
-				hold += input[next++] << bits;
-				bits += 8;
-			}
-			if(inf_leave) {
-				break _hx_loop1;
-			}
-			strm.adler = state.check = (hold >>> 24 & 255) + (hold >>> 8 & 65280) + ((hold & 65280) << 8) + ((hold & 255) << 24);
-			hold = 0;
-			bits = 0;
-			state.mode = 11;
-			break;
-		case 11:
-			if(!state.havedict) {
-				strm.next_out = put;
-				strm.avail_out = left;
-				strm.next_in = next;
-				strm.avail_in = have;
-				state.hold = hold;
-				state.bits = bits;
-				return 2;
-			}
-			strm.adler = state.check = 1;
-			state.mode = 12;
-			break;
-		case 12:
-			if(flush == 5 || flush == 6) {
-				continue;
-			}
-			state.mode = 13;
-			break;
-		case 13:
-			if(state.last) {
-				hold >>>= bits & 7;
-				bits -= bits & 7;
-				state.mode = 27;
-				continue;
-			}
-			while(bits < 3) {
-				if(have == 0) {
-					inf_leave = true;
-					break;
-				}
-				--have;
-				hold += input[next++] << bits;
-				bits += 8;
-			}
-			if(inf_leave) {
-				break _hx_loop1;
-			}
-			state.last = (hold & 1) == 1;
-			hold >>>= 1;
-			--bits;
-			var _g1 = hold & 3;
-			switch(_g1) {
-			case 0:
-				state.mode = 14;
-				break;
-			case 1:
-				pako_zlib_Inflate.fixedtables(state);
-				state.mode = 20;
-				if(flush == 6) {
-					hold >>>= 2;
-					bits -= 2;
-					inf_leave = true;
-					break _hx_loop1;
-				}
-				break;
-			case 2:
-				state.mode = 17;
-				break;
-			case 3:
-				strm.msg = "invalid block type";
-				state.mode = 30;
-				break;
-			}
-			hold >>>= 2;
-			bits -= 2;
-			break;
-		case 14:
-			hold >>>= bits & 7;
-			bits -= bits & 7;
-			while(bits < 32) {
-				if(have == 0) {
-					inf_leave = true;
-					break;
-				}
-				--have;
-				hold += input[next++] << bits;
-				bits += 8;
-			}
-			if(inf_leave) {
-				break _hx_loop1;
-			}
-			if((hold & 65535) != (hold >>> 16 ^ 65535)) {
-				strm.msg = "invalid stored block lengths";
-				state.mode = 30;
-				continue;
-			}
-			state.length = hold & 65535;
-			hold = 0;
-			bits = 0;
-			state.mode = 15;
-			if(flush == 6) {
-				inf_leave = true;
-				break _hx_loop1;
-			}
-			break;
-		case 15:
-			state.mode = 16;
-			break;
-		case 16:
-			copy = state.length;
-			if(copy != 0) {
-				if(copy > have) {
-					copy = have;
-				}
-				if(copy > left) {
-					copy = left;
-				}
-				if(copy == 0) {
-					inf_leave = true;
-					break _hx_loop1;
-				}
-				var dest1 = output;
-				var src1 = input;
-				haxe_io_Bytes.ofData(dest1.buffer).blit(dest1.byteOffset + put,haxe_io_Bytes.ofData(src1.buffer),src1.byteOffset + next,copy);
-				have -= copy;
-				next += copy;
-				left -= copy;
-				put += copy;
-				state.length -= copy;
-				continue;
-			}
-			state.mode = 12;
-			break;
-		case 17:
-			while(bits < 14) {
-				if(have == 0) {
-					inf_leave = true;
-					break;
-				}
-				--have;
-				hold += input[next++] << bits;
-				bits += 8;
-			}
-			if(inf_leave) {
-				break _hx_loop1;
-			}
-			state.nlen = (hold & 31) + 257;
-			hold >>>= 5;
-			bits -= 5;
-			state.ndist = (hold & 31) + 1;
-			hold >>>= 5;
-			bits -= 5;
-			state.ncode = (hold & 15) + 4;
-			hold >>>= 4;
-			bits -= 4;
-			if(state.nlen > 286 || state.ndist > 30) {
-				strm.msg = "too many length or distance symbols";
-				state.mode = 30;
-				continue;
-			}
-			state.have = 0;
-			state.mode = 18;
-			break;
-		case 18:
-			while(state.have < state.ncode) {
-				while(bits < 3) {
-					if(have == 0) {
-						inf_leave = true;
-						break;
-					}
-					--have;
-					hold += input[next++] << bits;
-					bits += 8;
-				}
-				if(inf_leave) {
-					break;
-				}
-				state.lens[order[state.have++]] = hold & 7 & 65535;
-				hold >>>= 3;
-				bits -= 3;
-			}
-			if(inf_leave) {
-				break _hx_loop1;
-			}
-			while(state.have < 19) state.lens[order[state.have++]] = 0;
-			state.lencode = state.lendyn;
-			state.lenbits = 7;
-			opts = { bits : state.lenbits};
-			ret = pako_zlib_InfTrees.inflate_table(0,state.lens,0,19,state.lencode,0,state.work,opts);
-			state.lenbits = opts.bits;
-			if(ret != 0) {
-				strm.msg = "invalid code lengths set";
-				state.mode = 30;
-				continue;
-			}
-			state.have = 0;
-			state.mode = 19;
-			break;
-		case 19:
-			while(state.have < state.nlen + state.ndist) {
-				while(true) {
-					here = state.lencode[hold & (1 << state.lenbits) - 1];
-					here_bits = here >>> 24;
-					here_op = here >>> 16 & 255;
-					here_val = here & 65535;
-					if(here_bits <= bits) {
-						break;
-					}
-					if(have == 0) {
-						inf_leave = true;
-						break;
-					}
-					--have;
-					hold += input[next++] << bits;
-					bits += 8;
-				}
-				if(inf_leave) {
-					break;
-				}
-				if(here_val < 16) {
-					hold >>>= here_bits;
-					bits -= here_bits;
-					state.lens[state.have++] = here_val & 65535;
-				} else {
-					if(here_val == 16) {
-						n = here_bits + 2;
-						while(bits < n) {
-							if(have == 0) {
-								inf_leave = true;
-								break;
-							}
-							--have;
-							hold += input[next++] << bits;
-							bits += 8;
-						}
-						if(inf_leave) {
-							break;
-						}
-						hold >>>= here_bits;
-						bits -= here_bits;
-						if(state.have == 0) {
-							strm.msg = "invalid bit length repeat";
-							state.mode = 30;
-							break;
-						}
-						len = state.lens[state.have - 1];
-						copy = 3 + (hold & 3);
-						hold >>>= 2;
-						bits -= 2;
-					} else if(here_val == 17) {
-						n = here_bits + 3;
-						while(bits < n) {
-							if(have == 0) {
-								inf_leave = true;
-								break;
-							}
-							--have;
-							hold += input[next++] << bits;
-							bits += 8;
-						}
-						if(inf_leave) {
-							break;
-						}
-						hold >>>= here_bits;
-						bits -= here_bits;
-						len = 0;
-						copy = 3 + (hold & 7);
-						hold >>>= 3;
-						bits -= 3;
-					} else {
-						n = here_bits + 7;
-						while(bits < n) {
-							if(have == 0) {
-								inf_leave = true;
-								break;
-							}
-							--have;
-							hold += input[next++] << bits;
-							bits += 8;
-						}
-						if(inf_leave) {
-							break;
-						}
-						hold >>>= here_bits;
-						bits -= here_bits;
-						len = 0;
-						copy = 11 + (hold & 127);
-						hold >>>= 7;
-						bits -= 7;
-					}
-					if(state.have + copy > state.nlen + state.ndist) {
-						strm.msg = "invalid bit length repeat";
-						state.mode = 30;
-						break;
-					}
-					while(copy-- != 0) state.lens[state.have++] = len & 65535;
-				}
-			}
-			if(inf_leave || state.mode == 30) {
-				continue;
-			}
-			if(state.lens[256] == 0) {
-				strm.msg = "invalid code -- missing end-of-block";
-				state.mode = 30;
-				continue;
-			}
-			state.lenbits = 9;
-			opts = { bits : state.lenbits};
-			ret = pako_zlib_InfTrees.inflate_table(1,state.lens,0,state.nlen,state.lencode,0,state.work,opts);
-			state.lenbits = opts.bits;
-			if(ret != 0) {
-				strm.msg = "invalid literal/lengths set";
-				state.mode = 30;
-				continue;
-			}
-			state.distbits = 6;
-			state.distcode = state.distdyn;
-			opts = { bits : state.distbits};
-			ret = pako_zlib_InfTrees.inflate_table(2,state.lens,state.nlen,state.ndist,state.distcode,0,state.work,opts);
-			state.distbits = opts.bits;
-			if(ret != 0) {
-				strm.msg = "invalid distances set";
-				state.mode = 30;
-				continue;
-			}
-			state.mode = 20;
-			if(flush == 6) {
-				inf_leave = true;
-				continue;
-			}
-			break;
-		case 20:
-			state.mode = 21;
-			break;
-		case 21:
-			if(have >= 6 && left >= 258) {
-				strm.next_out = put;
-				strm.avail_out = left;
-				strm.next_in = next;
-				strm.avail_in = have;
-				state.hold = hold;
-				state.bits = bits;
-				pako_zlib_InfFast.inflate_fast(strm,_out);
-				put = strm.next_out;
-				output = strm.output;
-				left = strm.avail_out;
-				next = strm.next_in;
-				input = strm.input;
-				have = strm.avail_in;
-				hold = state.hold;
-				bits = state.bits;
-				if(state.mode == 12) {
-					state.back = -1;
-				}
-				continue;
-			}
-			state.back = 0;
-			while(true) {
-				here = state.lencode[hold & (1 << state.lenbits) - 1];
-				here_bits = here >>> 24;
-				here_op = here >>> 16 & 255;
-				here_val = here & 65535;
-				if(here_bits <= bits) {
-					break;
-				}
-				if(have == 0) {
-					inf_leave = true;
-					break;
-				}
-				--have;
-				hold += input[next++] << bits;
-				bits += 8;
-			}
-			if(inf_leave) {
-				continue;
-			}
-			if(here_op != 0 && (here_op & 240) == 0) {
-				last_bits = here_bits;
-				last_op = here_op;
-				last_val = here_val;
-				while(true) {
-					here = state.lencode[last_val + ((hold & (1 << last_bits + last_op) - 1) >> last_bits)];
-					here_bits = here >>> 24;
-					here_op = here >>> 16 & 255;
-					here_val = here & 65535;
-					if(last_bits + here_bits <= bits) {
-						break;
-					}
-					if(have == 0) {
-						inf_leave = true;
-						break;
-					}
-					--have;
-					hold += input[next++] << bits;
-					bits += 8;
-				}
-				if(inf_leave) {
-					continue;
-				}
-				hold >>>= last_bits;
-				bits -= last_bits;
-				state.back += last_bits;
-			}
-			hold >>>= here_bits;
-			bits -= here_bits;
-			state.back += here_bits;
-			state.length = here_val;
-			if(here_op == 0) {
-				state.mode = 26;
-				continue;
-			}
-			if((here_op & 32) != 0) {
-				state.back = -1;
-				state.mode = 12;
-				continue;
-			}
-			if((here_op & 64) != 0) {
-				strm.msg = "invalid literal/length code";
-				state.mode = 30;
-				continue;
-			}
-			state.extra = here_op & 15;
-			state.mode = 22;
-			break;
-		case 22:
-			if(state.extra != 0) {
-				n = state.extra;
-				while(bits < n) {
-					if(have == 0) {
-						inf_leave = true;
-						break;
-					}
-					--have;
-					hold += input[next++] << bits;
-					bits += 8;
-				}
-				if(inf_leave) {
-					continue;
-				}
-				state.length += hold & (1 << state.extra) - 1;
-				hold >>>= state.extra;
-				bits -= state.extra;
-				state.back += state.extra;
-			}
-			state.was = state.length;
-			state.mode = 23;
-			break;
-		case 23:
-			while(true) {
-				here = state.distcode[hold & (1 << state.distbits) - 1];
-				here_bits = here >>> 24;
-				here_op = here >>> 16 & 255;
-				here_val = here & 65535;
-				if(here_bits <= bits) {
-					break;
-				}
-				if(have == 0) {
-					inf_leave = true;
-					break;
-				}
-				--have;
-				hold += input[next++] << bits;
-				bits += 8;
-			}
-			if(inf_leave) {
-				continue;
-			}
-			if((here_op & 240) == 0) {
-				last_bits = here_bits;
-				last_op = here_op;
-				last_val = here_val;
-				while(true) {
-					here = state.distcode[last_val + ((hold & (1 << last_bits + last_op) - 1) >> last_bits)];
-					here_bits = here >>> 24;
-					here_op = here >>> 16 & 255;
-					here_val = here & 65535;
-					if(last_bits + here_bits <= bits) {
-						break;
-					}
-					if(have == 0) {
-						inf_leave = true;
-						break;
-					}
-					--have;
-					hold += input[next++] << bits;
-					bits += 8;
-				}
-				if(inf_leave) {
-					continue;
-				}
-				hold >>>= last_bits;
-				bits -= last_bits;
-				state.back += last_bits;
-			}
-			hold >>>= here_bits;
-			bits -= here_bits;
-			state.back += here_bits;
-			if((here_op & 64) != 0) {
-				strm.msg = "invalid distance code";
-				state.mode = 30;
-				continue;
-			}
-			state.offset = here_val;
-			state.extra = here_op & 15;
-			state.mode = 24;
-			break;
-		case 24:
-			if(state.extra != 0) {
-				n = state.extra;
-				while(bits < n) {
-					if(have == 0) {
-						inf_leave = true;
-						break;
-					}
-					--have;
-					hold += input[next++] << bits;
-					bits += 8;
-				}
-				if(inf_leave) {
-					continue;
-				}
-				state.offset += hold & (1 << state.extra) - 1;
-				hold >>>= state.extra;
-				bits -= state.extra;
-				state.back += state.extra;
-			}
-			if(state.offset > state.dmax) {
-				strm.msg = "invalid distance too far back";
-				state.mode = 30;
-				continue;
-			}
-			state.mode = 25;
-			break;
-		case 25:
-			if(left == 0) {
-				inf_leave = true;
-				continue;
-			}
-			copy = _out - left;
-			if(state.offset > copy) {
-				copy = state.offset - copy;
-				if(copy > state.whave) {
-					if(state.sane != 0) {
-						strm.msg = "invalid distance too far back";
-						state.mode = 30;
-						continue;
-					}
-				}
-				if(copy > state.wnext) {
-					copy -= state.wnext;
-					from = state.wsize - copy;
-				} else {
-					from = state.wnext - copy;
-				}
-				if(copy > state.length) {
-					copy = state.length;
-				}
-				from_source = state.window;
-			} else {
-				from_source = output;
-				from = put - state.offset;
-				copy = state.length;
-			}
-			if(copy > left) {
-				copy = left;
-			}
-			left -= copy;
-			state.length -= copy;
-			while(true) {
-				output[put++] = from_source[from++] & 255;
-				if(!(--copy != 0)) {
-					break;
-				}
-			}
-			if(state.length == 0) {
-				state.mode = 21;
-			}
-			break;
-		case 26:
-			if(left == 0) {
-				inf_leave = true;
-				continue;
-			}
-			output[put++] = state.length & 255;
-			--left;
-			state.mode = 21;
-			break;
-		case 27:
-			if(state.wrap != 0) {
-				while(bits < 32) {
-					if(have == 0) {
-						inf_leave = true;
-						break;
-					}
-					--have;
-					hold |= input[next++] << bits;
-					bits += 8;
-				}
-				if(inf_leave) {
-					continue;
-				}
-				_out -= left;
-				strm.total_out += _out;
-				state.total += _out;
-				if(_out != 0) {
-					strm.adler = state.check = state.flags != 0 ? pako_zlib_CRC32.crc32(state.check,output,_out,put - _out) : pako_zlib_Adler32.adler32(state.check,output,_out,put - _out);
-				}
-				_out = left;
-				hold |= 0;
-				if((state.flags != 0 ? hold : (hold >>> 24 & 255) + (hold >>> 8 & 65280) + ((hold & 65280) << 8) + ((hold & 255) << 24)) != state.check) {
-					strm.msg = "incorrect data check";
-					state.mode = 30;
-					continue;
-				}
-				hold = 0;
-				bits = 0;
-			}
-			state.mode = 28;
-			break;
-		case 28:
-			if(state.wrap != 0 && state.flags != 0) {
-				while(bits < 32) {
-					if(have == 0) {
-						inf_leave = true;
-						break;
-					}
-					--have;
-					hold += input[next++] << bits;
-					bits += 8;
-				}
-				if(inf_leave) {
-					continue;
-				}
-				if(hold != (state.total & -1)) {
-					strm.msg = "incorrect length check";
-					state.mode = 30;
-					continue;
-				}
-				hold = 0;
-				bits = 0;
-			}
-			state.mode = 29;
-			break;
-		case 29:
-			ret = 1;
-			inf_leave = true;
-			continue;
-		case 30:
-			ret = -3;
-			inf_leave = true;
-			continue;
-		case 31:
-			return -4;
-		case 32:
-			return -2;
-		default:
-			return -2;
-		}
-	}
-	strm.next_out = put;
-	strm.avail_out = left;
-	strm.next_in = next;
-	strm.avail_in = have;
-	state.hold = hold;
-	state.bits = bits;
-	if(state.wsize != 0 || _out != strm.avail_out && state.mode < 30 && (state.mode < 27 || flush != 4)) {
-		if(pako_zlib_Inflate.updatewindow(strm,strm.output,strm.next_out,_out - strm.avail_out) != 0) {
-			state.mode = 31;
-			return -4;
-		}
-	}
-	_in -= strm.avail_in;
-	_out -= strm.avail_out;
-	strm.total_in += _in;
-	strm.total_out += _out;
-	state.total += _out;
-	if(state.wrap != 0 && _out != 0) {
-		strm.adler = state.check = state.flags != 0 ? pako_zlib_CRC32.crc32(state.check,output,_out,strm.next_out - _out) : pako_zlib_Adler32.adler32(state.check,output,_out,strm.next_out - _out);
-	}
-	strm.data_type = state.bits + (state.last ? 64 : 0) + (state.mode == 12 ? 128 : 0) + (state.mode == 20 || state.mode == 15 ? 256 : 0);
-	if((_in == 0 && _out == 0 || flush == 4) && ret == 0) {
-		ret = -5;
-	}
-	return ret;
-};
-pako_zlib_Inflate.inflateEnd = function(strm) {
-	if(strm == null || strm.inflateState == null) {
-		return -2;
-	}
-	var state = strm.inflateState;
-	if(state.window != null) {
-		state.window = null;
-	}
-	strm.inflateState = null;
-	return 0;
-};
-pako_zlib_Inflate.inflateGetHeader = function(strm,head) {
-	if(strm == null || strm.inflateState == null) {
-		return -2;
-	}
-	var state = strm.inflateState;
-	if((state.wrap & 2) == 0) {
-		return -2;
-	}
-	state.head = head;
-	head.done = false;
-	return 0;
-};
-pako_zlib_Inflate.inflateSetDictionary = function(strm,dictionary) {
-	var dictLength = dictionary.length;
-	var dictid;
-	if(strm == null || strm.inflateState == null) {
-		return -2;
-	}
-	var state = strm.inflateState;
-	if(state.wrap != 0 && state.mode != 11) {
-		return -2;
-	}
-	if(state.mode == 11) {
-		dictid = 1;
-		dictid = pako_zlib_Adler32.adler32(dictid,dictionary,dictLength,0);
-		if(dictid != state.check) {
-			return -3;
-		}
-	}
-	var ret = pako_zlib_Inflate.updatewindow(strm,dictionary,dictLength,dictLength);
-	if(ret != 0) {
-		state.mode = 31;
-		return -4;
-	}
-	state.havedict = true;
-	return 0;
-};
-var pako_zlib_InflateState = function() {
-	this.was = 0;
-	this.back = 0;
-	this.sane = 0;
-	this.distdyn = null;
-	this.lendyn = null;
-	this.work = new Uint16Array(288);
-	this.lens = new Uint16Array(320);
-	this.next = null;
-	this.have = 0;
-	this.ndist = 0;
-	this.nlen = 0;
-	this.ncode = 0;
-	this.distbits = 0;
-	this.lenbits = 0;
-	this.distcode = null;
-	this.lencode = null;
-	this.extra = 0;
-	this.offset = 0;
-	this.length = 0;
-	this.bits = 0;
-	this.hold = 0;
-	this.window = null;
-	this.wnext = 0;
-	this.whave = 0;
-	this.wsize = 0;
-	this.wbits = 0;
-	this.head = null;
-	this.total = 0;
-	this.check = 0;
-	this.dmax = 0;
-	this.flags = 0;
-	this.havedict = false;
-	this.wrap = 0;
-	this.last = false;
-	this.mode = 0;
-};
-pako_zlib_InflateState.__name__ = true;
 var pako_zlib_Messages = function() { };
 pako_zlib_Messages.__name__ = true;
 pako_zlib_Messages.get = function(error) {
@@ -8042,7 +3846,6 @@ pako_zlib_TreeDesc.__name__ = true;
 var pako_zlib_ZStream = function() {
 	this.adler = 0;
 	this.data_type = 2;
-	this.inflateState = null;
 	this.deflateState = null;
 	this.msg = "";
 	this.total_out = 0;
@@ -8062,7 +3865,6 @@ sys_FileSystem.exists = function(path) {
 		js_node_Fs.accessSync(path);
 		return true;
 	} catch( _ ) {
-		var _1 = (_ instanceof js__$Boot_HaxeError) ? _.val : _;
 		return false;
 	}
 };
@@ -8070,7 +3872,6 @@ sys_FileSystem.isDirectory = function(path) {
 	try {
 		return js_node_Fs.statSync(path).isDirectory();
 	} catch( e ) {
-		var e1 = (e instanceof js__$Boot_HaxeError) ? e.val : e;
 		return false;
 	}
 };
@@ -8087,7 +3888,6 @@ sys_FileSystem.createDirectory = function(path) {
 			try {
 				stat = js_node_Fs.statSync(path);
 			} catch( _ ) {
-				var _1 = (_ instanceof js__$Boot_HaxeError) ? _.val : _;
 				throw e1;
 			}
 			if(!stat.isDirectory()) {
@@ -8142,39 +3942,7 @@ sys_io_FileInput.prototype = $extend(haxe_io_Input.prototype,{
 		this.pos += bytesRead;
 		return bytesRead;
 	}
-	,close: function() {
-		js_node_Fs.closeSync(this.fd);
-	}
-	,seek: function(p,pos) {
-		switch(pos[1]) {
-		case 0:
-			this.pos = p;
-			break;
-		case 1:
-			this.pos += p;
-			break;
-		case 2:
-			this.pos = js_node_Fs.fstatSync(this.fd).size + p;
-			break;
-		}
-	}
-	,tell: function() {
-		return this.pos;
-	}
-	,eof: function() {
-		return this.pos >= js_node_Fs.fstatSync(this.fd).size;
-	}
 });
-var sys_io_FileSeek = { __ename__ : true, __constructs__ : ["SeekBegin","SeekCur","SeekEnd"] };
-sys_io_FileSeek.SeekBegin = ["SeekBegin",0];
-sys_io_FileSeek.SeekBegin.toString = $estr;
-sys_io_FileSeek.SeekBegin.__enum__ = sys_io_FileSeek;
-sys_io_FileSeek.SeekCur = ["SeekCur",1];
-sys_io_FileSeek.SeekCur.toString = $estr;
-sys_io_FileSeek.SeekCur.__enum__ = sys_io_FileSeek;
-sys_io_FileSeek.SeekEnd = ["SeekEnd",2];
-sys_io_FileSeek.SeekEnd.toString = $estr;
-sys_io_FileSeek.SeekEnd.__enum__ = sys_io_FileSeek;
 var $_, $fid = 0;
 function $bind(o,m) { if( m == null ) return null; if( m.__id__ == null ) m.__id__ = $fid++; var f; if( o.hx__closures__ == null ) o.hx__closures__ = {}; else f = o.hx__closures__[m.__id__]; if( f == null ) { f = m.bind(o); o.hx__closures__[m.__id__] = f; } return f; }
 String.__name__ = true;
@@ -8225,55 +3993,12 @@ Console.logPrefix = "<b><gray>><//> ";
 Console.warnPrefix = "<b><yellow>><//> ";
 Console.errorPrefix = "<b><red>><//> ";
 Console.successPrefix = "<b><light_green>><//> ";
-Console.debugPrefix = "<b><magenta>><//> ";
-Console.argSeparator = " ";
 Console.unicodeCompatibilityMode = Sys.systemName() == "Windows" ? 1 : 0;
 Console.unicodeCompatibilityEnabled = false;
 Console.formatTagPattern = new EReg("<(/)?([^><{}\\s]*|{[^}<>]*})>","g");
-_$Console_FormatFlag_$Impl_$.RESET = "reset";
-_$Console_FormatFlag_$Impl_$.BOLD = "bold";
-_$Console_FormatFlag_$Impl_$.ITALIC = "italic";
-_$Console_FormatFlag_$Impl_$.DIM = "dim";
-_$Console_FormatFlag_$Impl_$.UNDERLINE = "underline";
-_$Console_FormatFlag_$Impl_$.BLINK = "blink";
-_$Console_FormatFlag_$Impl_$.INVERT = "invert";
-_$Console_FormatFlag_$Impl_$.HIDDEN = "hidden";
-_$Console_FormatFlag_$Impl_$.BLACK = "black";
-_$Console_FormatFlag_$Impl_$.RED = "red";
-_$Console_FormatFlag_$Impl_$.GREEN = "green";
-_$Console_FormatFlag_$Impl_$.YELLOW = "yellow";
-_$Console_FormatFlag_$Impl_$.BLUE = "blue";
-_$Console_FormatFlag_$Impl_$.MAGENTA = "magenta";
-_$Console_FormatFlag_$Impl_$.CYAN = "cyan";
-_$Console_FormatFlag_$Impl_$.WHITE = "white";
-_$Console_FormatFlag_$Impl_$.LIGHT_BLACK = "light_black";
-_$Console_FormatFlag_$Impl_$.LIGHT_RED = "light_red";
-_$Console_FormatFlag_$Impl_$.LIGHT_GREEN = "light_green";
-_$Console_FormatFlag_$Impl_$.LIGHT_YELLOW = "light_yellow";
-_$Console_FormatFlag_$Impl_$.LIGHT_BLUE = "light_blue";
-_$Console_FormatFlag_$Impl_$.LIGHT_MAGENTA = "light_magenta";
-_$Console_FormatFlag_$Impl_$.LIGHT_CYAN = "light_cyan";
-_$Console_FormatFlag_$Impl_$.LIGHT_WHITE = "light_white";
-_$Console_FormatFlag_$Impl_$.BG_BLACK = "bg_black";
-_$Console_FormatFlag_$Impl_$.BG_RED = "bg_red";
-_$Console_FormatFlag_$Impl_$.BG_GREEN = "bg_green";
-_$Console_FormatFlag_$Impl_$.BG_YELLOW = "bg_yellow";
-_$Console_FormatFlag_$Impl_$.BG_BLUE = "bg_blue";
-_$Console_FormatFlag_$Impl_$.BG_MAGENTA = "bg_magenta";
-_$Console_FormatFlag_$Impl_$.BG_CYAN = "bg_cyan";
-_$Console_FormatFlag_$Impl_$.BG_WHITE = "bg_white";
-_$Console_FormatFlag_$Impl_$.BG_LIGHT_BLACK = "bg_light_black";
-_$Console_FormatFlag_$Impl_$.BG_LIGHT_RED = "bg_light_red";
-_$Console_FormatFlag_$Impl_$.BG_LIGHT_GREEN = "bg_light_green";
-_$Console_FormatFlag_$Impl_$.BG_LIGHT_YELLOW = "bg_light_yellow";
-_$Console_FormatFlag_$Impl_$.BG_LIGHT_BLUE = "bg_light_blue";
-_$Console_FormatFlag_$Impl_$.BG_LIGHT_MAGENTA = "bg_light_magenta";
-_$Console_FormatFlag_$Impl_$.BG_LIGHT_CYAN = "bg_light_cyan";
-_$Console_FormatFlag_$Impl_$.BG_LIGHT_WHITE = "bg_light_white";
 Main.textureAtlasFontVersion = 0;
 Main.technique = "msdf";
-Main.prebuiltBinariesDir = "prebuilt";
-Main.msdfgenPath = "msdfgen";
+Main.msdfgenPath = "prebuilt/msdfgen";
 Main.charsetPath = "charsets/ascii.txt";
 Main.localTmpDir = "__glyph-cache";
 Main.fontOutputDirectory = "";
@@ -8282,147 +4007,14 @@ Main.size_px = 32;
 Main.fieldRange_px = 2;
 Main.maximumTextureSize = 4096;
 Main.whitespaceCharacters = [" ","\t"];
-Main.suToFUnits = 64.0;
-format_bmp_Tools.ARGB_MAP = [0,1,2,3];
 format_bmp_Tools.BGRA_MAP = [3,2,1,0];
-haxe_zip_InflateImpl.LEN_EXTRA_BITS_TBL = [0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0,-1,-1];
-haxe_zip_InflateImpl.LEN_BASE_VAL_TBL = [3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258];
-haxe_zip_InflateImpl.DIST_EXTRA_BITS_TBL = [0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,-1,-1];
-haxe_zip_InflateImpl.DIST_BASE_VAL_TBL = [1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577];
-haxe_zip_InflateImpl.CODE_LENGTHS_POS = [16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];
 pako_Deflate.DEFAULT_OPTIONS = { level : -1, method : 8, chunkSize : 16384, windowBits : 15, memLevel : 8, strategy : 0, raw : false, gzip : false, header : null, dictionary : null};
-pako_Inflate.DEFAULT_OPTIONS = { chunkSize : 16384, windowBits : 0, raw : false, dictionary : null};
-pako_Pako.VERSION = "1.0.4";
 pako_zlib_CRC32.crcTable = pako_zlib_CRC32.makeTable();
-pako_zlib_Flush.Z_NO_FLUSH = 0;
-pako_zlib_Flush.Z_PARTIAL_FLUSH = 1;
-pako_zlib_Flush.Z_SYNC_FLUSH = 2;
-pako_zlib_Flush.Z_FULL_FLUSH = 3;
-pako_zlib_Flush.Z_FINISH = 4;
-pako_zlib_Flush.Z_BLOCK = 5;
-pako_zlib_Flush.Z_TREES = 6;
-pako_zlib_ErrorStatus.Z_OK = 0;
-pako_zlib_ErrorStatus.Z_STREAM_END = 1;
-pako_zlib_ErrorStatus.Z_NEED_DICT = 2;
-pako_zlib_ErrorStatus.Z_ERRNO = -1;
-pako_zlib_ErrorStatus.Z_STREAM_ERROR = -2;
-pako_zlib_ErrorStatus.Z_DATA_ERROR = -3;
-pako_zlib_ErrorStatus.Z_MEM_ERROR = -4;
-pako_zlib_ErrorStatus.Z_BUF_ERROR = -5;
-pako_zlib_ErrorStatus.Z_VERSION_ERROR = -6;
-pako_zlib_CompressionLevel.Z_NO_COMPRESSION = 0;
-pako_zlib_CompressionLevel.Z_BEST_SPEED = 1;
-pako_zlib_CompressionLevel.Z_BEST_COMPRESSION = 9;
-pako_zlib_CompressionLevel.Z_DEFAULT_COMPRESSION = -1;
-pako_zlib_Strategy.Z_FILTERED = 1;
-pako_zlib_Strategy.Z_HUFFMAN_ONLY = 2;
-pako_zlib_Strategy.Z_RLE = 3;
-pako_zlib_Strategy.Z_FIXED = 4;
-pako_zlib_Strategy.Z_DEFAULT_STRATEGY = 0;
-pako_zlib_DataType.Z_BINARY = 0;
-pako_zlib_DataType.Z_TEXT = 1;
-pako_zlib_DataType.Z_UNKNOWN = 2;
-pako_zlib_Method.Z_DEFLATED = 8;
-pako_zlib_Trees.STORED_BLOCK = 0;
-pako_zlib_Trees.STATIC_TREES = 1;
-pako_zlib_Trees.DYN_TREES = 2;
-pako_zlib_Trees.LENGTH_CODES = 29;
-pako_zlib_Trees.LITERALS = 256;
-pako_zlib_Trees.L_CODES = 286;
-pako_zlib_Trees.D_CODES = 30;
-pako_zlib_Trees.BL_CODES = 19;
-pako_zlib_Trees.HEAP_SIZE = 573;
-pako_zlib_Trees.MAX_BITS = 15;
-pako_zlib_Trees.Buf_size = 16;
-pako_zlib_Trees.MAX_BL_BITS = 7;
-pako_zlib_Trees.END_BLOCK = 256;
-pako_zlib_Trees.REP_3_6 = 16;
-pako_zlib_Trees.REPZ_3_10 = 17;
-pako_zlib_Trees.REPZ_11_138 = 18;
 pako_zlib_Trees.extra_lbits = haxe_io__$UInt16Array_UInt16Array_$Impl_$.fromArray([0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0]);
 pako_zlib_Trees.extra_dbits = haxe_io__$UInt16Array_UInt16Array_$Impl_$.fromArray([0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13]);
 pako_zlib_Trees.extra_blbits = haxe_io__$UInt16Array_UInt16Array_$Impl_$.fromArray([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,3,7]);
 pako_zlib_Trees.bl_order = haxe_io__$UInt16Array_UInt16Array_$Impl_$.fromArray([16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15]);
-pako_zlib_Trees.DIST_CODE_LEN = 512;
 pako_zlib_Trees.static_init_done = false;
-pako_zlib_Deflate.deflateInfo = "pako deflate (from Nodeca project)";
-pako_zlib_Deflate.MAX_MEM_LEVEL = 9;
-pako_zlib_Deflate.MAX_WBITS = 15;
-pako_zlib_Deflate.DEF_MEM_LEVEL = 8;
-pako_zlib_Deflate.LENGTH_CODES = 29;
-pako_zlib_Deflate.LITERALS = 256;
-pako_zlib_Deflate.L_CODES = 286;
-pako_zlib_Deflate.D_CODES = 30;
-pako_zlib_Deflate.BL_CODES = 19;
-pako_zlib_Deflate.HEAP_SIZE = 573;
-pako_zlib_Deflate.MAX_BITS = 15;
-pako_zlib_Deflate.MIN_MATCH = 3;
-pako_zlib_Deflate.MAX_MATCH = 258;
-pako_zlib_Deflate.MIN_LOOKAHEAD = 262;
-pako_zlib_Deflate.PRESET_DICT = 32;
-pako_zlib_Deflate.INIT_STATE = 42;
-pako_zlib_Deflate.EXTRA_STATE = 69;
-pako_zlib_Deflate.NAME_STATE = 73;
-pako_zlib_Deflate.COMMENT_STATE = 91;
-pako_zlib_Deflate.HCRC_STATE = 103;
-pako_zlib_Deflate.BUSY_STATE = 113;
-pako_zlib_Deflate.FINISH_STATE = 666;
-pako_zlib_Deflate.BS_NEED_MORE = 1;
-pako_zlib_Deflate.BS_BLOCK_DONE = 2;
-pako_zlib_Deflate.BS_FINISH_STARTED = 3;
-pako_zlib_Deflate.BS_FINISH_DONE = 4;
-pako_zlib_Deflate.OS_CODE = 3;
-pako_zlib_InfTrees.MAXBITS = 15;
-pako_zlib_InfTrees.ENOUGH_LENS = 852;
-pako_zlib_InfTrees.ENOUGH_DISTS = 592;
-pako_zlib_InfTrees.CODES = 0;
-pako_zlib_InfTrees.LENS = 1;
-pako_zlib_InfTrees.DISTS = 2;
-pako_zlib_InfTrees.lbase = haxe_io__$UInt16Array_UInt16Array_$Impl_$.fromArray([3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258,0,0]);
-pako_zlib_InfTrees.lext = haxe_io__$UInt16Array_UInt16Array_$Impl_$.fromArray([16,16,16,16,16,16,16,16,17,17,17,17,18,18,18,18,19,19,19,19,20,20,20,20,21,21,21,21,16,72,78]);
-pako_zlib_InfTrees.dbase = haxe_io__$UInt16Array_UInt16Array_$Impl_$.fromArray([1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577,0,0]);
-pako_zlib_InfTrees.dext = haxe_io__$UInt16Array_UInt16Array_$Impl_$.fromArray([16,16,16,16,17,17,18,18,19,19,20,20,21,21,22,22,23,23,24,24,25,25,26,26,27,27,28,28,29,29,64,64]);
-pako_zlib_Inflate.inflateInfo = "pako inflate (from Nodeca project)";
-pako_zlib_Inflate.CODES = 0;
-pako_zlib_Inflate.LENS = 1;
-pako_zlib_Inflate.DISTS = 2;
-pako_zlib_Inflate.HEAD = 1;
-pako_zlib_Inflate.FLAGS = 2;
-pako_zlib_Inflate.TIME = 3;
-pako_zlib_Inflate.OS = 4;
-pako_zlib_Inflate.EXLEN = 5;
-pako_zlib_Inflate.EXTRA = 6;
-pako_zlib_Inflate.NAME = 7;
-pako_zlib_Inflate.COMMENT = 8;
-pako_zlib_Inflate.HCRC = 9;
-pako_zlib_Inflate.DICTID = 10;
-pako_zlib_Inflate.DICT = 11;
-pako_zlib_Inflate.TYPE = 12;
-pako_zlib_Inflate.TYPEDO = 13;
-pako_zlib_Inflate.STORED = 14;
-pako_zlib_Inflate.COPY_ = 15;
-pako_zlib_Inflate.COPY = 16;
-pako_zlib_Inflate.TABLE = 17;
-pako_zlib_Inflate.LENLENS = 18;
-pako_zlib_Inflate.CODELENS = 19;
-pako_zlib_Inflate.LEN_ = 20;
-pako_zlib_Inflate.LEN = 21;
-pako_zlib_Inflate.LENEXT = 22;
-pako_zlib_Inflate.DIST = 23;
-pako_zlib_Inflate.DISTEXT = 24;
-pako_zlib_Inflate.MATCH = 25;
-pako_zlib_Inflate.LIT = 26;
-pako_zlib_Inflate.CHECK = 27;
-pako_zlib_Inflate.LENGTH = 28;
-pako_zlib_Inflate.DONE = 29;
-pako_zlib_Inflate.BAD = 30;
-pako_zlib_Inflate.MEM = 31;
-pako_zlib_Inflate.SYNC = 32;
-pako_zlib_Inflate.ENOUGH_LENS = 852;
-pako_zlib_Inflate.ENOUGH_DISTS = 592;
-pako_zlib_Inflate.MAX_WBITS = 15;
-pako_zlib_Inflate.DEF_WBITS = 15;
-pako_zlib_Inflate.virgin = true;
 pako_zlib_Messages.map = (function($this) {
 	var $r;
 	var _g = new haxe_ds_IntMap();
