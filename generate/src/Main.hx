@@ -1,10 +1,14 @@
 /**
 
-	# GPUText Font Atlas Generator
-
-	Font units are normalized so that a value of 1 corresponds to the font's ascender and 0 the the descender
+	# GPUText Font-atlas Generator
 
 	Definitions
+		character
+			An entry in the character set, may not have an associated glyph (e.g. tab character)
+		glyph
+			A printable shape associated with a character
+
+	Units
 		su
 			shape units, specific to msdfgen
 		FUnits
@@ -13,12 +17,7 @@
 			|font.ascender| + |font.descender|
 		normalized units
 			FUnits / fontHeight
-		
-		glyph bounds in pixels
-			(left + translateX) * atlasScale
-			(right + translateX) * atlasScale
-			glyph-height-px - (bottom + translateY) * atlasScale
-			glyph-height-px - (top + translateY) * atlasScale
+			Normalized so that a value of 1 corresponds to the font's ascender and 0 the the descender
 
 	References
 		https://docs.microsoft.com/en-gb/typography/opentype/spec/ttch01
@@ -55,10 +54,8 @@ typedef TextureAtlasGlyph = {
 	atlasRect: {x: Int, y: Int, w: Int, h: Int},
 	atlasScale: Float, // (normalized font units) * atlasScale = (pixels in texture atlas)
 
-	// the following are in normalized font units
-	shapeBounds: {left: Float, bottom: Float, right: Float, top: Float},
-	// the shape offset within the atlasRect
-	shapeOffset: {x: Float, y: Float},
+	// the offset within the atlasRect in normalized font units
+	offset: {x: Float, y: Float},
 }
 
 typedef TextureAtlasCharacter = {
@@ -86,6 +83,7 @@ typedef TextureAtlasFont = {
 		h: Int,
 	},
 
+	// normalized font units
 	ascender: Float,
 	descender: Float,
 
@@ -109,7 +107,11 @@ typedef TextureAtlasFont = {
 		funitsPerEm: Float,
 	},
 
-	fieldRange_px: Float
+	fieldRange_px: Float,
+
+	// glyph bounding boxes in normalized font units
+	// not guaranteed to be included in the font file
+	?glyphBounds: haxe.DynamicAccess<{left: Float, bottom: Float, right: Float, top: Float}>
 }
 
 class Main {
@@ -129,6 +131,7 @@ class Main {
 	static var size_px: Int = 32;
 	static var fieldRange_px: Int = 2;
 	static var maximumTextureSize = 4096;
+	static var storeBounds = false;
 
 	static var whitespaceCharacters = [
 		' ', '\t'
@@ -179,13 +182,16 @@ class Main {
 			@doc('Sets the maximum dimension of the texture atlas')
 			['--max-texture-size'] => (size: Int) -> maximumTextureSize = size,
 
+			@doc('Enables storing glyph bounding boxes in the font (default false)')
+			['--bounds'] => (enabled: Bool) -> storeBounds = enabled,
+
 			// misc
 			@doc('Shows this help')
 			['--help'] => () -> {
 				showHelp = true;
 			},
 
-			@doc('Path of TrueType font file')
+			@doc('Path of TrueType font file (.ttf)')
 			_ => (path: String) -> {
 				// catch any common aliases for help
 				if (path.charAt(0) == '-') {
@@ -257,6 +263,14 @@ class Main {
 			var font = opentype.Opentype.loadSync(ttfPath);
 			var fontHeight = font.ascender - font.descender;
 			var fontFileName = haxe.io.Path.withoutDirectory(haxe.io.Path.withoutExtension(ttfPath));
+
+			// liga = ligatures which you want to be on by default, but which can be deactivated by the user.
+			// dlig = ligatures which you want to be off by default, but which can be activated by the user.
+			// rlig = ligatures which you want to be on and which cannot be turned off. Or at least that's the theory. Unfortunately, this feature is not implemented 
+			// trace(font.substitution.getLigatures('liga', null, null));
+			// trace(font.substitution.getLigatures('dlig', null, null));
+			// trace(font.substitution.getLigatures('rlig', null, null));
+
 			function normalizeFUnits(fUnit: Float) return fUnit / fontHeight;
 
 			Console.log('Generating glyphs for <b>"$ttfPath"</b>');
@@ -286,13 +300,13 @@ class Main {
 					glyph: {
 						atlasScale: 0,
 						atlasRect: null,
-						shapeBounds: null,
-						shapeOffset: null,
+						offset: null,
 					}
 				});
 			}
 
 			// parse the generated metric files and copy values into the atlas character map
+			var glyphBounds = new haxe.DynamicAccess<{left: Float, bottom: Float, right: Float, top: Float}>();
 			for (char in charList) {
 				var charCode = char.charCodeAt(0);
 				var metricsFileContent = sys.io.File.getContent(metricsPath(charCode));
@@ -316,9 +330,9 @@ class Main {
 						case 'scale':
 							atlasCharacter.glyph.atlasScale = 1/norm(1/value[0]);
 						case 'bounds':
-							atlasCharacter.glyph.shapeBounds = {left: norm(value[0]) , bottom: norm(value[1]), right: norm(value[2]), top: norm(value[3])};
+							glyphBounds.set(char, {left: norm(value[0]), bottom: norm(value[1]), right: norm(value[2]), top: norm(value[3])});
 						case 'translate':
-							atlasCharacter.glyph.shapeOffset = {x: norm(value[0]), y: norm(value[1])};
+							atlasCharacter.glyph.offset = {x: norm(value[0]), y: norm(value[1])};
 						// case 'range':
 							// atlasCharacter.glyph.fieldRange = norm(value[0]);
 					}
@@ -433,6 +447,12 @@ class Main {
 				}
 			}
 
+			function processFontNameField(field: Null<{?en: String}>): String {
+				if (field == null) return null;
+				if (field.en == null) return null;
+				return field.en.trim();
+			}
+
 			var font: TextureAtlasFont = {
 				format: TEXTURE_ATLAS_FONT,
 				version: textureAtlasFontVersion,
@@ -449,23 +469,24 @@ class Main {
 				ascender: font.ascender / fontHeight,
 				descender: font.descender / fontHeight,
 				metadata: {
-					family: font.names.fontFamily.en.trim(),
-					subfamily: font.names.fontSubfamily.en.trim(),
-					version: font.names.version.en.trim(),
-					postScriptName: font.names.postScriptName.en.trim(),
+					family: processFontNameField(font.names.fontFamily),
+					subfamily: processFontNameField(font.names.fontSubfamily),
+					version: processFontNameField(font.names.version),
+					postScriptName: processFontNameField(font.names.postScriptName),
 
-					copyright: font.names.copyright.en.trim(),
-					trademark: font.names.trademark.en.trim(),
-					manufacturer: font.names.manufacturer.en.trim(),
-					manufacturerURL: font.names.manufacturerURL.en.trim(),
-					designerURL: font.names.designerURL.en.trim(),
-					license: font.names.license.en.trim(),
-					licenseURL: font.names.licenseURL.en.trim(),
+					copyright: processFontNameField(font.names.copyright),
+					trademark: processFontNameField(font.names.trademark),
+					manufacturer: processFontNameField(font.names.manufacturer),
+					manufacturerURL: processFontNameField(font.names.manufacturerURL),
+					designerURL: processFontNameField(font.names.designerURL),
+					license: processFontNameField(font.names.license),
+					licenseURL: processFontNameField(font.names.licenseURL),
 
 					height_funits: fontHeight,
 					funitsPerEm: font.unitsPerEm
 				},
-				fieldRange_px: fieldRange_px
+				glyphBounds: storeBounds ? glyphBounds : null,
+				fieldRange_px: fieldRange_px,
 			}
 
 			if (fontOutputDirectory != '') sys.FileSystem.createDirectory(fontOutputDirectory);
