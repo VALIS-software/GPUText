@@ -2,15 +2,17 @@
 
 	# GPUText Font Atlas Generator
 
-	Font units are normalized so that a value of 1 corresponds to the top of the 'em square' and 0 the bottom
+	Font units are normalized so that a value of 1 corresponds to the font's ascender and 0 the the descender
 
 	Definitions
 		su
 			shape units, specific to msdfgen
 		FUnits
 			values directly stored in the truetype file
+		fontHeight
+			|font.ascender| + |font.descender|
 		normalized units
-			FUnits / unitsPerEm, 0 corresponds to the bottom of the authoring 'em square' and 1, the top
+			FUnits / fontHeight
 		
 		glyph bounds in pixels
 			(left + translateX) * atlasScale
@@ -23,6 +25,9 @@
 		http://chanae.walon.org/pub/ttf/ttf_glyphs.htm
 
 **/
+
+using StringTools;
+
 @:enum abstract GPUTextFormat(String) {
 	var TEXTURE_ATLAS_FONT = 'TextureAtlasFont';
 }
@@ -50,7 +55,7 @@ typedef TextureAtlasGlyph = {
 	atlasRect: {x: Int, y: Int, w: Int, h: Int},
 	atlasScale: Float, // (normalized font units) * atlasScale = (pixels in texture atlas)
 
-	// the following are in normalized font units, where 0 is bottom of the authoring 'em square' and 1.0 is the top
+	// the following are in normalized font units
 	shapeBounds: {left: Float, bottom: Float, right: Float, top: Float},
 	// the shape offset within the atlasRect
 	shapeOffset: {x: Float, y: Float},
@@ -69,6 +74,7 @@ typedef TextureAtlasFont = {
 	technique: TextureFontTechnique,
 
 	characters: haxe.DynamicAccess<TextureAtlasCharacter>,
+	kerning: haxe.DynamicAccess<Float>,
 
 	textures: Array<
 		// array of mipmap levels, where 0 = largest and primary texture (mipmaps may be omitted)
@@ -78,6 +84,29 @@ typedef TextureAtlasFont = {
 	textureSize: {
 		w: Int,
 		h: Int,
+	},
+
+	ascender: Float,
+	descender: Float,
+
+	metadata: {
+		family: String,
+		subfamily: String,
+		version: String,
+		postScriptName: String,
+
+		copyright: String,
+		trademark: String,
+		manufacturer: String,
+		manufacturerURL: String,
+		designerURL: String,
+		license: String,
+		licenseURL: String,
+
+		// original authoring height
+		// this can be used to reproduce the unnormalized source values of the font
+		height_funits: Float,
+		funitsPerEm: Float,
 	},
 
 	fieldRange_px: Float
@@ -223,10 +252,12 @@ class Main {
 		var glyphList = charList.filter(c -> whitespaceCharacters.indexOf(c) == -1);
 
 		for (ttfPath in sourceTtfPaths) {
-
-			var fontName = haxe.io.Path.withoutDirectory(haxe.io.Path.withoutExtension(ttfPath));
-
 			sys.FileSystem.createDirectory(localTmpDir);
+
+			var font = opentype.Opentype.loadSync(ttfPath);
+			var fontHeight = font.ascender - font.descender;
+			var fontFileName = haxe.io.Path.withoutDirectory(haxe.io.Path.withoutExtension(ttfPath));
+			function normalizeFUnits(fUnit: Float) return fUnit / fontHeight;
 
 			Console.log('Generating glyphs for <b>"$ttfPath"</b>');
 
@@ -246,9 +277,6 @@ class Main {
 			}
 
 			Console.log('Reading glyph metrics');
-
-			var unitsPerEm = 2048;
-			Console.warn('Warning: unitsPerEm is hardcoded as 2048. This may causes some fonts to have the wrong scale.');
 
 			var atlasCharacters = new haxe.DynamicAccess<TextureAtlasCharacter>();
 			// initialize each character
@@ -280,7 +308,7 @@ class Main {
 
 					// multiply all values by a conversion factor from msdfgen to recover font's original values in FUnits
 					// divide all values by the number of FUnits that make up one side of the 'em' square to get normalized values
-					inline function norm(x: Float) return (x * suToFUnits)/unitsPerEm;
+					inline function norm(x: Float) return normalizeFUnits((x * suToFUnits));
 
 					switch name {
 						case 'advance':
@@ -388,29 +416,60 @@ class Main {
 			sys.FileSystem.deleteDirectory(localTmpDir);
 
 			// save png
-			var textureFileName = '$fontName-0.png';
+			var textureFileName = '$fontFileName-0.png';
 			var textureFilePath = haxe.io.Path.join([fontOutputDirectory, textureFileName]);
 			writeRgbPng(mapRgbBytes, atlasW, atlasH, textureFilePath);
 			Console.success('Saved <b>"$textureFilePath"</b> (${atlasW}x${atlasH}, ${glyphList.length} glyphs)');
 
 			// create font descriptor
+			// generate kerning map
+			var kerningMap = new haxe.DynamicAccess<Float>();
+			for (first in charList) {
+				for (second in charList) {
+					var kerningAmount_fu = font.getKerningValue(font.charToGlyph(first), font.charToGlyph(second));
+					if (kerningAmount_fu != null && kerningAmount_fu != 0) {
+						kerningMap.set(first + second, normalizeFUnits(kerningAmount_fu));
+					}
+				}
+			}
+
 			var font: TextureAtlasFont = {
 				format: TEXTURE_ATLAS_FONT,
 				version: textureAtlasFontVersion,
 				technique: MSDF,
+				characters: atlasCharacters,
+				kerning: kerningMap,
 				textures: [
 					[{localPath: textureFileName}]
 				],
-				characters: atlasCharacters,
 				textureSize: {
 					w: atlasW,
 					h: atlasH
+				},
+				ascender: font.ascender / fontHeight,
+				descender: font.descender / fontHeight,
+				metadata: {
+					family: font.names.fontFamily.en.trim(),
+					subfamily: font.names.fontSubfamily.en.trim(),
+					version: font.names.version.en.trim(),
+					postScriptName: font.names.postScriptName.en.trim(),
+
+					copyright: font.names.copyright.en.trim(),
+					trademark: font.names.trademark.en.trim(),
+					manufacturer: font.names.manufacturer.en.trim(),
+					manufacturerURL: font.names.manufacturerURL.en.trim(),
+					designerURL: font.names.designerURL.en.trim(),
+					license: font.names.license.en.trim(),
+					licenseURL: font.names.licenseURL.en.trim(),
+
+					height_funits: fontHeight,
+					funitsPerEm: font.unitsPerEm
 				},
 				fieldRange_px: fieldRange_px
 			}
 
 			if (fontOutputDirectory != '') sys.FileSystem.createDirectory(fontOutputDirectory);
-			var fontOutputPath = haxe.io.Path.join([fontOutputDirectory, fontName + '.json']);
+			var fontOutputPath = haxe.io.Path.join([fontOutputDirectory, fontFileName + '.json']);
 			sys.io.File.saveContent(fontOutputPath, haxe.Json.stringify(font, null, '\t'));
 			Console.success('Saved <b>"$fontOutputPath"</b>');
 		}
