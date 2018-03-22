@@ -12,6 +12,8 @@ var GPUText = {
 		textGroups = Array.isArray(textGroups) ? textGroups : [textGroups];
 
 		// @! could save 33% vertices with index buffer but adds to complexity a bit
+		const kerningEnabled = true;
+		const lineHeight = 1.0;
 
 		const elementSizeBytes = 4; // (float32)
 		const positionElements = 2;
@@ -42,17 +44,15 @@ var GPUText = {
 				const charCode = text.charCodeAt(c);
 
 				// @! layout
-				/*
 				switch (charCode) {
 					case 0xA0: // non-breaking space, fixed width
 						x += 1;
 						continue;
 					case '\n'.charCodeAt(0): // newline
-						y -= 1.3/scale;
+						y -= lineHeight;
 						x = 0;
 						continue;
 				}
-				*/
 
 				const fontCharacter = font.characters[char];
 
@@ -62,14 +62,20 @@ var GPUText = {
 				}
 
 				const glyph = fontCharacter.glyph;
+
 				if (glyph != null) {
 					// character has a glyph; add it to the vertexArray
 
+					if (kerningEnabled && c > 0) {
+						let kerningKey = text[c - 1] + char;
+						x += font.kerning[kerningKey] || 0.0;
+					}
+
 					// quad dimensions
-					const px = x - glyph.shapeOffset.x;
-					const py = y - glyph.shapeOffset.y;
-					const w = glyph.atlasRect.w / glyph.atlasScale; // convert width to normalized font units
-					const h = glyph.atlasRect.h / glyph.atlasScale;
+					let px = x - glyph.shapeOffset.x;
+					let py = y - glyph.shapeOffset.y - font.descender -1;
+					let w = glyph.atlasRect.w / glyph.atlasScale; // convert width to normalized font units
+					let h = glyph.atlasRect.h / glyph.atlasScale;
 					// uv
 					// add half-text offset to map to texel centers
 					let ux = (glyph.atlasRect.x + 0.5) / font.textureSize.w;
