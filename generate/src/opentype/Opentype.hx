@@ -17,4 +17,11 @@ package opentype;
 		
 	**/
 	static public function loadSync(url:String):opentype.Font;
+	/**
+		
+		@param  {ArrayBuffer}
+		@return {opentype.Font}
+		
+	**/
+	static public function parse(buffer:js.html.ArrayBuffer):opentype.Font;
 }

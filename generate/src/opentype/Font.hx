@@ -9,48 +9,18 @@ package opentype;
 	
 **/
 extern class Font {
-
-	var names: {
-		fontFamily: {en: String},
-		fontSubfamily: {en: String},
-		fullName: {en: String},
-		postScriptName: {en: String},
-		designer: {en: String},
-		designerURL: {en: String},
-		manufacturer: {en: String},
-		manufacturerURL: {en: String},
-		license: {en: String},
-		licenseURL: {en: String},
-		version: {en: String},
-		description: {en: String},
-		copyright: {en: String},
-		trademark: {en: String},
-	};
-	var unitsPerEm: Int;
-	var ascender: Float;
-	var descender: Float;
-	var createdTimestamp: Int;
-	var tables:{
-		os2: {
-			usWeightClass: String,
-			usWidthClass: String,
-			fsSelection: String,
-		}
-	};
-
-	var supported: Bool;
-	var glyphs: {
-		function get(index: Int): Glyph;
-		function push(index: Int, loader: Any): Void;
-		var length: Int;
-	};
-
-	// untyped fields
-	var encoding: Any;
-	var position: Any;
-	var substitution: Any;
-	var hinting: Any;
-
+	var names : { var fontFamily : { var en : String; }; var fontSubfamily : { var en : String; }; var fullName : { var en : String; }; var postScriptName : { var en : String; }; var designer : { var en : String; }; var designerURL : { var en : String; }; var manufacturer : { var en : String; }; var manufacturerURL : { var en : String; }; var license : { var en : String; }; var licenseURL : { var en : String; }; var version : { var en : String; }; var description : { var en : String; }; var copyright : { var en : String; }; var trademark : { var en : String; }; };
+	var unitsPerEm : Int;
+	var ascender : Float;
+	var descender : Float;
+	var createdTimestamp : Int;
+	var tables : { var os2 : { var usWeightClass : String; var usWidthClass : String; var fsSelection : String; }; };
+	var supported : Bool;
+	var glyphs : { function get(index:Int):Glyph; function push(index:Int, loader:Any):Void; var length : Int; };
+	var encoding : Any;
+	var position : Any;
+	var substitution : Any;
+	var hinting : Any;
 	function new(options:FontOptions):Void;
 	/**
 		
