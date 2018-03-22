@@ -5,7 +5,7 @@ using StringTools;
 class GenerateOpentypeExterns {
 	
 	static function main() {
-		// see https://github.com/nodebox/opentype.js/tree/cbf824f27b7250f287a66ed06b13700e5dc59fe2
+		// see https://github.com/nodebox/opentype.js/blob/cbf824f27b7250f287a66ed06b13700e5dc59fe2/externs/opentype.js
 		var jsExterns = sys.io.File.getContent('opentype-externs.js');
 
 		var modules = ClosureExternConverter.convert(jsExterns);
@@ -71,7 +71,7 @@ class GenerateOpentypeExterns {
 			// untyped fields
 			var encoding: Any;
 			var position: Any;
-			var substitution: Any;
+			var substitution: Substitution;
 			var hinting: Any;
 		}).fields.concat(fontDef.fields);
 

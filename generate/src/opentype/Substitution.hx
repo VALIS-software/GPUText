@@ -88,7 +88,7 @@ extern class Substitution extends opentype.Layout {
 		@return {Array} substitutions - The list of substitutions.
 		
 	**/
-	function getFeature(feature:String, script:String, language:String):Array<type>;
+	function getFeature(feature:String, script:String, language:String):Array<Any>;
 	/**
 		
 		Add a substitution to a feature for a given script and language.

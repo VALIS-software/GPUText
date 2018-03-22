@@ -19,7 +19,7 @@ extern class Font {
 	var glyphs : { function get(index:Int):Glyph; function push(index:Int, loader:Any):Void; var length : Int; };
 	var encoding : Any;
 	var position : Any;
-	var substitution : Any;
+	var substitution : Substitution;
 	var hinting : Any;
 	function new(options:FontOptions):Void;
 	/**
