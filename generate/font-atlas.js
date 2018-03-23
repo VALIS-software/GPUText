@@ -621,13 +621,22 @@ Main.main = function() {
 	}
 	var showHelp = false;
 	var argHandler_getDoc = function() {
-		return "['--charset'] <path>          : Path of file containing character set\n['--charlist'] <characters>   : List of characters\n['--output-dir', '-o'] <path> : Sets the path of the output font file. External resources will be saved in the same directory\n['--technique'] <name>        : Font rendering technique, one of: msdf, sdf, bitmap\n['--msdfgen'] <path>          : Path of msdfgen executable\n['--size'] <glyphSize>        : Maximum dimension of a glyph in pixels\n['--pxrange'] <range>         : Specifies the width of the range around the shape between the minimum and maximum representable signed distance in pixels\n['--max-texture-size'] <size> : Sets the maximum dimension of the texture atlas\n['--help']                    : Shows this help\n_ <path>                      : Path of TrueType font file";
+		return "['--charset'] <path>          : Path of file containing character set\n['--charlist'] <characters>   : List of characters\n['--output-dir', '-o'] <path> : Sets the path of the output font file. External resources will be saved in the same directory\n['--technique'] <name>        : Font rendering technique, one of: msdf, sdf, bitmap\n['--msdfgen'] <path>          : Path of msdfgen executable\n['--size'] <glyphSize>        : Maximum dimension of a glyph in pixels\n['--pxrange'] <range>         : Specifies the width of the range around the shape between the minimum and maximum representable signed distance in pixels\n['--max-texture-size'] <size> : Sets the maximum dimension of the texture atlas\n['--bounds'] <enabled>        : Enables storing glyph bounding boxes in the font (default false)\n['--help']                    : Shows this help\n_ <path>                      : Path of TrueType font file (.ttf)";
 	};
 	var argHandler_parse = function(__args) {
 		var __index = 0;
 		while(__index < __args.length) {
 			var _g1 = __args[__index++];
 			switch(_g1) {
+			case "--bounds":
+				if(__index + 1 > __args.length) {
+					if(![false][__args.length - 1]) {
+						throw new js__$Boot_HaxeError("Not enough arguments: " + Std.string(__args[__index - 1]) + " expects " + 1);
+					}
+				}
+				Main.storeBounds = __args[__index] == "true";
+				++__index;
+				break;
 			case "--charlist":
 				if(__index + 1 > __args.length) {
 					if(![false][__args.length - 1]) {
@@ -806,7 +815,8 @@ Main.main = function() {
 		var atlasCharacters = { };
 		var _g22 = 0;
 		var _g32 = Main.charList;
-		while(_g22 < _g32.length) atlasCharacters[_g32[_g22++]] = { advance : 1, glyph : { atlasScale : 0, atlasRect : null, shapeBounds : null, shapeOffset : null}};
+		while(_g22 < _g32.length) atlasCharacters[_g32[_g22++]] = { advance : 1, glyph : { atlasScale : 0, atlasRect : null, offset : null}};
+		var glyphBounds = { };
 		var _g23 = 0;
 		var _g33 = Main.charList;
 		while(_g23 < _g33.length) {
@@ -828,20 +838,16 @@ Main.main = function() {
 					atlasCharacter.advance = normalizeFUnits(value[0] * 64.0);
 					break;
 				case "bounds":
-					var tmp = normalizeFUnits(value[0] * 64.0);
-					var tmp1 = normalizeFUnits(value[1] * 64.0);
-					var tmp2 = normalizeFUnits(value[2] * 64.0);
-					var tmp3 = normalizeFUnits(value[3] * 64.0);
-					atlasCharacter.glyph.shapeBounds = { left : tmp, bottom : tmp1, right : tmp2, top : tmp3};
+					glyphBounds[char] = { left : normalizeFUnits(value[0] * 64.0), bottom : normalizeFUnits(value[1] * 64.0), right : normalizeFUnits(value[2] * 64.0), top : normalizeFUnits(value[3] * 64.0)};
 					break;
 				case "scale":
-					var tmp4 = normalizeFUnits(1 / value[0] * 64.0);
-					atlasCharacter.glyph.atlasScale = 1 / tmp4;
+					var tmp = normalizeFUnits(1 / value[0] * 64.0);
+					atlasCharacter.glyph.atlasScale = 1 / tmp;
 					break;
 				case "translate":
-					var tmp5 = normalizeFUnits(value[0] * 64.0);
-					var tmp6 = normalizeFUnits(value[1] * 64.0);
-					atlasCharacter.glyph.shapeOffset = { x : tmp5, y : tmp6};
+					var tmp1 = normalizeFUnits(value[0] * 64.0);
+					var tmp2 = normalizeFUnits(value[1] * 64.0);
+					atlasCharacter.glyph.offset = { x : tmp1, y : tmp2};
 					break;
 				}
 				str = varPattern.matchedRight();
@@ -952,12 +958,37 @@ Main.main = function() {
 				}
 			}
 		}
-		var font1 = { format : "TextureAtlasFont", version : Main.textureAtlasFontVersion, technique : "msdf", characters : atlasCharacters, kerning : kerningMap, textures : [[{ localPath : textureFileName}]], textureSize : { w : atlasW, h : atlasH}, ascender : font.ascender / fontHeight[0], descender : font.descender / fontHeight[0], metadata : { family : StringTools.trim(font.names.fontFamily.en), subfamily : StringTools.trim(font.names.fontSubfamily.en), version : StringTools.trim(font.names.version.en), postScriptName : StringTools.trim(font.names.postScriptName.en), copyright : StringTools.trim(font.names.copyright.en), trademark : StringTools.trim(font.names.trademark.en), manufacturer : StringTools.trim(font.names.manufacturer.en), manufacturerURL : StringTools.trim(font.names.manufacturerURL.en), designerURL : StringTools.trim(font.names.designerURL.en), license : StringTools.trim(font.names.license.en), licenseURL : StringTools.trim(font.names.licenseURL.en), height_funits : fontHeight[0], funitsPerEm : font.unitsPerEm}, fieldRange_px : Main.fieldRange_px};
+		var processFontNameField = (function() {
+			return function(field) {
+				if(field == null) {
+					return null;
+				}
+				if(field.en == null) {
+					return null;
+				}
+				return StringTools.trim(field.en);
+			};
+		})();
+		var font1 = Main.textureAtlasFontVersion;
+		var font2 = font.ascender / fontHeight[0];
+		var font3 = font.descender / fontHeight[0];
+		var font4 = processFontNameField(font.names.fontFamily);
+		var font5 = processFontNameField(font.names.fontSubfamily);
+		var font6 = processFontNameField(font.names.version);
+		var font7 = processFontNameField(font.names.postScriptName);
+		var font8 = processFontNameField(font.names.copyright);
+		var font9 = processFontNameField(font.names.trademark);
+		var font10 = processFontNameField(font.names.manufacturer);
+		var font11 = processFontNameField(font.names.manufacturerURL);
+		var font12 = processFontNameField(font.names.designerURL);
+		var font13 = processFontNameField(font.names.license);
+		var font14 = processFontNameField(font.names.licenseURL);
+		var font15 = { format : "TextureAtlasFont", version : font1, technique : "msdf", characters : atlasCharacters, kerning : kerningMap, textures : [[{ localPath : textureFileName}]], textureSize : { w : atlasW, h : atlasH}, ascender : font2, descender : font3, metadata : { family : font4, subfamily : font5, version : font6, postScriptName : font7, copyright : font8, trademark : font9, manufacturer : font10, manufacturerURL : font11, designerURL : font12, license : font13, licenseURL : font14, height_funits : fontHeight[0], funitsPerEm : font.unitsPerEm}, glyphBounds : Main.storeBounds ? glyphBounds : null, fieldRange_px : Main.fieldRange_px};
 		if(Main.fontOutputDirectory != "") {
 			sys_FileSystem.createDirectory(Main.fontOutputDirectory);
 		}
 		var fontOutputPath = haxe_io_Path.join([Main.fontOutputDirectory,fontFileName + ".json"]);
-		js_node_Fs.writeFileSync(fontOutputPath,JSON.stringify(font1,null,"\t"));
+		js_node_Fs.writeFileSync(fontOutputPath,JSON.stringify(font15,null,"\t"));
 		Console.printFormatted(Console.successPrefix + ("" + ("Saved <b>\"" + fontOutputPath + "\"</b>")) + "\n",0);
 	}
 };
@@ -4079,6 +4110,7 @@ Main.sourceTtfPaths = [];
 Main.size_px = 32;
 Main.fieldRange_px = 2;
 Main.maximumTextureSize = 4096;
+Main.storeBounds = false;
 Main.whitespaceCharacters = [" ","\t"];
 format_bmp_Tools.BGRA_MAP = [3,2,1,0];
 pako_Deflate.DEFAULT_OPTIONS = { level : -1, method : 8, chunkSize : 16384, windowBits : 15, memLevel : 8, strategy : 0, raw : false, gzip : false, header : null, dictionary : null};
