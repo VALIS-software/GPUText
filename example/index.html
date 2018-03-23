@@ -8,6 +8,11 @@
 		body {
 			font-family: helvetica, sans-serif;
 			margin: 0;
+			overflow: hidden;
+		}
+
+		canvas {
+			display: block;
 		}
 
 		#error-log {
@@ -99,10 +104,9 @@
 			})
 			.then((json) => {
 				font = json;
-				textBuffer = GPUTextWebGL.createTextBuffer(gl, [
-					{text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', font: font},
-				], {});
-				console.log('Created text buffers', textBuffer);
+				var layout = GPUText.layout('Lorem ipsum dolor sit amet, consectetur adipiscing elit.', font);
+				textBuffer = GPUTextWebGL.createTextBuffer(gl, GPUText.generateVertexData(layout));
+				console.log('Created text buffer', layout, textBuffer);
 			})
 			.catch(logError);
 
@@ -113,17 +117,21 @@
 		image.src = `${fontName}-0.png`;
 
 		// debug
-		let msdfDebugProgram = GPUTextWebGL.createTextProgram(gl, {}, null, `
+		let msdfDebugProgram = GPUTextWebGL.createTextProgram(
+			gl, {}, null,
+			`
 			precision mediump float;     
 
 			uniform vec4 color;
 			varying vec2 vUv;
 
 			void main() { gl_FragColor = color; }
-		`);
+			`
+		);
 		let debugModeCheckbox = document.getElementById('debug-mode');
 		let debugSize = document.getElementById('text-size');
 		debugSize.step = 0.01;
+		debugSize.value = 0.5;
 
 		let baselineBuffer = gl.createBuffer();
 		let baselineTransform = new Float32Array([
@@ -164,72 +172,66 @@
 			const t = window.performance.now()/1000;
 
 			gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+			const viewportAspect = gl.drawingBufferWidth / gl.drawingBufferHeight;
 
 			gl.clear(gl.COLOR_BUFFER_BIT);
 
 			// draw baseline
 			gl.useProgram(msdfDebugProgram.deviceHandle);
+			baselineTransform[0] = viewportAspect;
 			gl.uniformMatrix4fv(msdfDebugProgram.uniformLocations.transform, false, baselineTransform);
+			gl.uniform2f(msdfDebugProgram.uniformLocations.resolution, gl.drawingBufferWidth, gl.drawingBufferHeight);
 			gl.uniform4f(msdfDebugProgram.uniformLocations.color, 0.5, 0.8, 1, 1);
 			gl.bindBuffer(gl.ARRAY_BUFFER, baselineBuffer);
 			gl.vertexAttribPointer(msdfDebugProgram.attributeLocations.position, 2, gl.FLOAT, false, 2 * 4, 0);
 			gl.vertexAttribPointer(msdfDebugProgram.attributeLocations.uv, 2, gl.FLOAT, false, 2 * 4, 0);
 			gl.drawArrays(gl.LINES, 0, 2);
-			
-			const r = gl.drawingBufferWidth / gl.drawingBufferHeight;
-			const s = debugSize.value;
-			const sx = s / r;
-			const sy = s;
-			const x = -1;
-			const y = 0;
-			textTransform[0] = sx; textTransform[5] = sy;
-			textTransform[12] = x; textTransform[13] = y;
 
 			// draw text
 			if (textBuffer != null && glyphAtlasTexture != null) {
+				const s = debugSize.value;
+				const x = -1, y = font.ascender * s;
+				textTransform[0] = s; textTransform[5] = s;
+				textTransform[12] = x; textTransform[13] = y;
+
 				gl.useProgram(msdfProgram.deviceHandle);
+
 				gl.uniformMatrix4fv(msdfProgram.uniformLocations.transform, false, textTransform);
 				gl.uniform1i(msdfProgram.uniformLocations.glyphAtlas, glyphAtlasTextureUnit);
 				gl.uniform1f(msdfProgram.uniformLocations.fieldRange, font.fieldRange_px);
 				gl.uniform2f(msdfProgram.uniformLocations.resolution, gl.drawingBufferWidth, gl.drawingBufferHeight);
-
 				gl.uniform4f(msdfProgram.uniformLocations.color, 1.0, 1.0, 1.0, 1.0);
 
 				gl.bindBuffer(gl.ARRAY_BUFFER, textBuffer.deviceHandle);
 
 				gl.vertexAttribPointer(
 					msdfProgram.attributeLocations.position,
-					textBuffer.layout.position.elements,
+					textBuffer.vertexLayout.position.elements,
 					gl.FLOAT,
 					false,
-					textBuffer.layout.position.strideBytes,
-					textBuffer.layout.position.offsetBytes
+					textBuffer.vertexLayout.position.strideBytes,
+					textBuffer.vertexLayout.position.offsetBytes
 				);
 				gl.vertexAttribPointer(
 					msdfProgram.attributeLocations.uv,
-					textBuffer.layout.uv.elements,
+					textBuffer.vertexLayout.uv.elements,
 					gl.FLOAT,
 					false,
-					textBuffer.layout.uv.strideBytes,
-					textBuffer.layout.uv.offsetBytes
+					textBuffer.vertexLayout.uv.strideBytes,
+					textBuffer.vertexLayout.uv.offsetBytes
 				);
 
-				for (let i = 0; i < textBuffer.groups.length; i++) {
-					let groups = textBuffer.groups[i];
-					gl.drawArrays(textBuffer.drawMode, groups.vertexOffset, groups.vertexCount);
-				}
+				gl.drawArrays(textBuffer.drawMode, 0, textBuffer.vertexCount);
 
 				// debug: draw wireframe boxes
 				if (debugModeCheckbox.checked) {
 					gl.useProgram(msdfDebugProgram.deviceHandle);
 					gl.uniformMatrix4fv(msdfDebugProgram.uniformLocations.transform, false, textTransform);
-					gl.uniform1i(msdfDebugProgram.uniformLocations.glyphAtlas, glyphAtlasTextureUnit);
-					let a = 0.2;
+					gl.uniform1f(msdfDebugProgram.uniformLocations.fieldRange, font.fieldRange_px);
+					gl.uniform2f(msdfDebugProgram.uniformLocations.resolution, gl.drawingBufferWidth, gl.drawingBufferHeight);
+					let a = 0.3;
 					gl.uniform4f(msdfDebugProgram.uniformLocations.color, 0 * a, 1 * a, 0 * a, a);
-					for (let i = 0; i < textBuffer.groups.length; i++) {
-						let groups = textBuffer.groups[i];
-						gl.drawArrays(gl.LINE_STRIP, groups.vertexOffset, groups.vertexCount);
-					}
+					gl.drawArrays(gl.LINE_STRIP, 0, textBuffer.vertexCount);
 				}
 				
 			}
