@@ -32,108 +32,110 @@ var GPUTextWebGL = (function(){
 		return p;            
 	}
 
-	function generateMsdfShaderCode(options) {
-		return {
-			vertexCode: `
-				#version 100
+	return {
+		generateMsdfShaderCode: function (options) {
+			return {
+				vertexCode: `
+					#version 100
 
-				precision mediump float;
+					precision mediump float;
 
-				attribute vec2 position;
-				attribute vec3 uv;
+					attribute vec2 position;
+					attribute vec3 uv;
 
-				uniform mat4 transform;
-				uniform float fieldRange;
-				uniform vec2 resolution;
+					uniform mat4 transform;
+					uniform float fieldRange;
+					uniform vec2 resolution;
 
-				varying vec2 vUv;
-				varying float vFieldRangeDisplay_px;
+					varying vec2 vUv;
+					varying float vFieldRangeDisplay_px;
 
-				void main() {
-					vUv = uv.xy;
+					void main() {
+						vUv = uv.xy;
 
-					// determine the field range in pixels when drawn to the framebuffer
-					vec2 scale = abs(vec2(transform[0][0], transform[1][1]));
-					float atlasScale = uv.z;
-					vFieldRangeDisplay_px = fieldRange * scale.y * (resolution.y * 0.5) / atlasScale;
-					vFieldRangeDisplay_px = max(vFieldRangeDisplay_px, 1.0);
+						// determine the field range in pixels when drawn to the framebuffer
+						vec2 scale = abs(vec2(transform[0][0], transform[1][1]));
+						float atlasScale = uv.z;
+						vFieldRangeDisplay_px = fieldRange * scale.y * (resolution.y * 0.5) / atlasScale;
+						vFieldRangeDisplay_px = max(vFieldRangeDisplay_px, 1.0);
 
-					gl_Position = transform * vec4(position, 0.0, 1.0);
-				}
-			`,
-			fragmentCode: `
-				#version 100
+						vec2 p = vec2(position.x * resolution.y / resolution.x, position.y);
 
-				precision mediump float;     
+						gl_Position = transform * vec4(p, 0.0, 1.0);
+					}
+				`,
+				fragmentCode: `
+					#version 100
 
-				uniform vec4 color;
-				uniform sampler2D glyphAtlas;
+					precision mediump float;     
 
-				uniform mat4 transform;
+					uniform vec4 color;
+					uniform sampler2D glyphAtlas;
 
-				varying vec2 vUv;
-				varying float vFieldRangeDisplay_px;
+					uniform mat4 transform;
 
-				float median(float r, float g, float b) {
-				    return max(min(r, g), min(max(r, g), b));
-				}
+					varying vec2 vUv;
+					varying float vFieldRangeDisplay_px;
 
-				void main() {
-					vec3 sample = texture2D(glyphAtlas, vUv).rgb;
+					float median(float r, float g, float b) {
+					    return max(min(r, g), min(max(r, g), b));
+					}
 
-					float sigDist = median(sample.r, sample.g, sample.b);
+					void main() {
+						vec3 sample = texture2D(glyphAtlas, vUv).rgb;
 
-					// spread field range over 1px for antialiasing
-					sigDist = clamp((sigDist - 0.5) * vFieldRangeDisplay_px + 0.5, 0.0, 1.0);
+						float sigDist = median(sample.r, sample.g, sample.b);
 
-					float alpha = sigDist;
+						// spread field range over 1px for antialiasing
+						sigDist = clamp((sigDist - 0.5) * vFieldRangeDisplay_px + 0.5, 0.0, 1.0);
 
-					gl_FragColor = color * alpha;
-				}
-			`,
-			vertexAttribute: {
-				position: {
-					name: 'position',
-					type: 'vec2',
+						float alpha = sigDist;
+
+						gl_FragColor = color * alpha;
+					}
+				`,
+				vertexAttribute: {
+					position: {
+						name: 'position',
+						type: 'vec2',
+					},
+					uv: {
+						name: 'uv',
+						type: 'vec2',
+					},
+					atlasScale: {
+						name: 'atlasScale',
+						type: 'float',
+					}
 				},
-				uv: {
-					name: 'uv',
-					type: 'vec2',
-				},
-				atlasScale: {
-					name: 'atlasScale',
-					type: 'float',
-				}
-			},
-			uniform: {
-				transform: {
-					name: 'transform',
-					type: 'mat4'
-				},
-				color: {
-					name: 'color',
-					type: 'vec4'
-				},
-				glyphAtlas: {
-					name: 'glyphAtlas',
-					type: 'sampler2D'
-				},
-				fieldRange: {
-					name: 'fieldRange',
-					type: 'float'
-				},
-				resolution: {
-					name: 'resolution',
-					type: 'vec2'
+				uniform: {
+					transform: {
+						name: 'transform',
+						type: 'mat4'
+					},
+					color: {
+						name: 'color',
+						type: 'vec4'
+					},
+					glyphAtlas: {
+						name: 'glyphAtlas',
+						type: 'sampler2D'
+					},
+					fieldRange: {
+						name: 'fieldRange',
+						type: 'float'
+					},
+					resolution: {
+						name: 'resolution',
+						type: 'vec2'
+					}
 				}
 			}
-		}
-	}
+		},
 
-	return {
 		createTextProgram: function(gl, options, vertexCodeOverride, fragmentCodeOverride) {
 			try {
-				let msdfShaders = generateMsdfShaderCode({});
+				let msdfShaders = GPUTextWebGL.generateMsdfShaderCode({});
 				let textProgram = createProgram(gl, vertexCodeOverride || msdfShaders.vertexCode, fragmentCodeOverride || msdfShaders.fragmentCode);
 				gl.bindAttribLocation(textProgram, 0, 'position');
 				gl.bindAttribLocation(textProgram, 1, 'uv');
@@ -162,17 +164,15 @@ var GPUTextWebGL = (function(){
 			program.deviceHandle = null;
 		},
 
-		createTextBuffer: function(gl, textGroups, layout) {
-			let vertexData = GPUText.generateVertexData(textGroups, layout);
-
+		createTextBuffer: function(gl, vertexData) {
 			let buffer = gl.createBuffer();
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 			gl.bufferData(gl.ARRAY_BUFFER, vertexData.vertexArray, gl.STATIC_DRAW);
 
 			return {
 				deviceHandle: buffer,
-				groups: vertexData.groups,
-				layout: vertexData.layout,
+				vertexCount: vertexData.vertexCount,
+				vertexLayout: vertexData.vertexLayout,
 				drawMode: gl.TRIANGLES,
 				frontFace: gl.CCW,
 			};
@@ -188,7 +188,7 @@ var GPUTextWebGL = (function(){
 			gl.bindTexture(gl.TEXTURE_2D, mapTexture);
 			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 			gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-			gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE); // @! review
+			// gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE); // @! review
 
 			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureSource);
 
