@@ -11,7 +11,7 @@
 
 "use strict";
 
-var GPUText = {
+const GPUText = {
 
 	// y increases from top-down (like HTML/DOM coordinates)
 	layout: function(text, font, layoutOptions) {
@@ -112,6 +112,7 @@ var GPUText = {
 
 		for (let i = 0; i < glyphLayout.sequence.length; i++) {
 			const item = glyphLayout.sequence[i];
+			const font = glyphLayout.font;
 			const fontCharacter = font.characters[item.char];
 			const glyph = fontCharacter.glyph;
 
@@ -166,4 +167,8 @@ var GPUText = {
 			}
 		}
 	}
+}
+
+if (module != null && module.exports != null) {
+	module.exports = GPUText;
 }

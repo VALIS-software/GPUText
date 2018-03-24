@@ -1,6 +1,6 @@
 "use strict";
 
-var GPUTextWebGL = (function(){
+const GPUTextWebGL = (function(){
 
 	function createShader(gl, code, type) {
 		let s = gl.createShader(type);
@@ -208,3 +208,7 @@ var GPUTextWebGL = (function(){
 		},
 	}
 })();
+
+if (module != null && module.exports != null) {
+	module.exports = GPUTextWebGL;
+}
