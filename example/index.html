@@ -75,7 +75,11 @@
 		fitCanvas();
 		window.addEventListener('resize', fitCanvas);
 
-		let gl = canvas.getContext('webgl', {antialias: true});
+		let gl = canvas.getContext('webgl', {antialias: false});
+		let debugInfoExt = gl.getExtension('WEBGL_debug_renderer_info');
+		let rendererPname = debugInfoExt == null ? js.html.webgl.RenderingContext.RENDERER : debugInfoExt.UNMASKED_RENDERER_WEBGL;
+		let glRenderer = gl.getParameter(rendererPname);
+		console.log('WebGL via ' + glRenderer);
 
 		// app state
 		let textBuffer = null;
@@ -90,7 +94,10 @@
 		let glyphAtlasTextureUnit = 0;
 
 		// initialize MSDF program
-		let msdfProgram = GPUTextWebGL.createTextProgram(gl, {});
+		let msdfProgram = null;
+		try {msdfProgram = GPUTextWebGL.createTextProgram(gl, {});}
+		catch (e) {logError(e);}
+
 		let fontName = 'OpenSans-Regular';
 		// load font and generate text buffer
 		let font = null;
@@ -130,7 +137,7 @@
 		);
 		let debugModeCheckbox = document.getElementById('debug-mode');
 		let debugSize = document.getElementById('text-size');
-		debugSize.step = 0.01;
+		debugSize.step = 0.0025;
 		debugSize.value = 0.5;
 
 		let baselineBuffer = gl.createBuffer();
@@ -149,7 +156,7 @@
 		gl.disable(gl.STENCIL_TEST);
 		gl.disable(gl.SCISSOR_TEST);
 
-		gl.enable(gl.CULL_FACE);
+		// gl.enable(gl.CULL_FACE); WTF FF?
 
 		// premultiplied alpha blending is required when drawing msdf text
 		gl.enable(gl.BLEND);

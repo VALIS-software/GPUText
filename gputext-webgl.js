@@ -17,21 +17,6 @@ const GPUTextWebGL = (function(){
 		return s;
 	}
 
-	function createProgram(gl, vertexCode, fragmentCode) {
-		let vs = createShader(gl, vertexCode, gl.VERTEX_SHADER);
-		let fs = createShader(gl, fragmentCode, gl.FRAGMENT_SHADER);
-		let p = gl.createProgram();
-		gl.attachShader(p, vs);
-		gl.attachShader(p, fs);
-		gl.linkProgram(p);
-		gl.deleteShader(vs);
-		gl.deleteShader(fs);
-		if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
-			throw `[program link]: ${gl.getProgramInfoLog(p)}`;
-		}
-		return p;            
-	}
-
 	return {
 		generateMsdfShaderCode: function (options) {
 			return {
@@ -134,28 +119,41 @@ const GPUTextWebGL = (function(){
 		},
 
 		createTextProgram: function(gl, options, vertexCodeOverride, fragmentCodeOverride) {
-			try {
-				let msdfShaders = GPUTextWebGL.generateMsdfShaderCode({});
-				let textProgram = createProgram(gl, vertexCodeOverride || msdfShaders.vertexCode, fragmentCodeOverride || msdfShaders.fragmentCode);
-				gl.bindAttribLocation(textProgram, 0, 'position');
-				gl.bindAttribLocation(textProgram, 1, 'uv');
-				return {
-					deviceHandle: textProgram,
-					attributeLocations: {
-						position: 0,
-						uv: 1,
-					},
-					uniformLocations: {
-						transform: gl.getUniformLocation(textProgram, msdfShaders.uniform.transform.name),
-						color: gl.getUniformLocation(textProgram, msdfShaders.uniform.color.name),
-						glyphAtlas: gl.getUniformLocation(textProgram, msdfShaders.uniform.glyphAtlas.name),
-						fieldRange: gl.getUniformLocation(textProgram, msdfShaders.uniform.fieldRange.name),
-						resolution: gl.getUniformLocation(textProgram, msdfShaders.uniform.resolution.name),
-					}
+			let msdfShaders = GPUTextWebGL.generateMsdfShaderCode({});
+
+			let p = gl.createProgram();
+
+			let vs = createShader(gl, vertexCodeOverride || msdfShaders.vertexCode, gl.VERTEX_SHADER);
+			let fs = createShader(gl, fragmentCodeOverride || msdfShaders.fragmentCode, gl.FRAGMENT_SHADER);
+			gl.attachShader(p, vs);
+			gl.attachShader(p, fs);
+
+			// must set bindings before linking
+			gl.bindAttribLocation(p, 0, 'position');
+			gl.bindAttribLocation(p, 1, 'uv');
+
+			gl.linkProgram(p);
+
+			gl.deleteShader(vs);
+			gl.deleteShader(fs);
+
+			if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+				throw `[program link]: ${gl.getProgramInfoLog(p)}`;
+			}
+			
+			return {
+				deviceHandle: p,
+				attributeLocations: {
+					position: 0,
+					uv: 1,
+				},
+				uniformLocations: {
+					transform: gl.getUniformLocation(p, msdfShaders.uniform.transform.name),
+					color: gl.getUniformLocation(p, msdfShaders.uniform.color.name),
+					glyphAtlas: gl.getUniformLocation(p, msdfShaders.uniform.glyphAtlas.name),
+					fieldRange: gl.getUniformLocation(p, msdfShaders.uniform.fieldRange.name),
+					resolution: gl.getUniformLocation(p, msdfShaders.uniform.resolution.name),
 				}
-			} catch (e) {
-				logError(e);
-				return null;
 			}
 		},
 
@@ -209,6 +207,6 @@ const GPUTextWebGL = (function(){
 	}
 })();
 
-if (module != null && module.exports != null) {
+if (typeof module != 'undefined' && module.exports != null) {
 	module.exports = GPUTextWebGL;
 }

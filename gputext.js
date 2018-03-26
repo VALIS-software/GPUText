@@ -169,6 +169,6 @@ const GPUText = {
 	}
 }
 
-if (module != null && module.exports != null) {
+if (typeof module != 'undefined' && module.exports != null) {
 	module.exports = GPUText;
 }
