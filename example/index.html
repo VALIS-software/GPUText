@@ -77,7 +77,7 @@
 
 		let gl = canvas.getContext('webgl', {antialias: false});
 		let debugInfoExt = gl.getExtension('WEBGL_debug_renderer_info');
-		let rendererPname = debugInfoExt == null ? js.html.webgl.RenderingContext.RENDERER : debugInfoExt.UNMASKED_RENDERER_WEBGL;
+		let rendererPname = debugInfoExt == null ? gl.RENDERER : debugInfoExt.UNMASKED_RENDERER_WEBGL;
 		let glRenderer = gl.getParameter(rendererPname);
 		console.log('WebGL via ' + glRenderer);
 
