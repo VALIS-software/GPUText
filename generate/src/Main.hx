@@ -198,6 +198,9 @@ class Main {
 			@doc('Enables storing glyph bounding boxes in the font (default false)')
 			['--bounds'] => (enabled: Bool) -> storeBounds = enabled,
 
+			@doc('Saves the font in the binary format (experimental; default false)')
+			['--binary'] => (enabled: Bool) -> saveBinary = enabled,
+
 			// misc
 			@doc('Shows this help')
 			['--help'] => () -> {
@@ -619,6 +622,7 @@ class Main {
 						}
 					}
 				]];
+				payloadPos = payload.length;
 
 				var binaryFontOutput = new haxe.io.BytesOutput();
 				binaryFontOutput.writeString(haxe.Json.stringify(header));
