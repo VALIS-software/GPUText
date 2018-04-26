@@ -14,7 +14,7 @@ extern class Font {
 	var ascender : Float;
 	var descender : Float;
 	var createdTimestamp : Int;
-	var tables : { var os2 : { var usWeightClass : String; var usWidthClass : String; var fsSelection : String; }; };
+	var tables : { var os2 : { var version : Int; var xAvgCharWidth : Int; var usWeightClass : Int; var usWidthClass : Int; var fsType : Int; var ySubscriptXSize : Int; var ySubscriptYSize : Int; var ySubscriptXOffset : Int; var ySubscriptYOffset : Int; var ySuperscriptXSize : Int; var ySuperscriptYSize : Int; var ySuperscriptXOffset : Int; var ySuperscriptYOffset : Int; var yStrikeoutSize : Int; var yStrikeoutPosition : Int; var sFamilyClass : Int; var bFamilyType : Int; var bSerifStyle : Int; var bWeight : Int; var bProportion : Int; var bContrast : Int; var bStrokeVariation : Int; var bArmStyle : Int; var bLetterform : Int; var bMidline : Int; var bXHeight : Int; var ulUnicodeRange1 : Int; var ulUnicodeRange2 : Int; var ulUnicodeRange3 : Int; var ulUnicodeRange4 : Int; var achVendID : String; var fsSelection : Int; var usFirstCharIndex : Int; var usLastCharIndex : Int; var sTypoAscender : Int; var sTypoDescender : Int; var sTypoLineGap : Int; var usWinAscent : Int; var usWinDescent : Int; var ulCodePageRange1 : Int; var ulCodePageRange2 : Int; var sxHeight : Int; var sCapHeight : Int; var usDefaultChar : Int; var usBreakChar : Int; var usMaxContext : Int; }; };
 	var supported : Bool;
 	var glyphs : { function get(index:Int):Glyph; function push(index:Int, loader:Any):Void; var length : Int; };
 	var encoding : Any;
