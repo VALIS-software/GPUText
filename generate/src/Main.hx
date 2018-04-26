@@ -91,6 +91,9 @@ typedef TextureAtlasFont = {
 	ascender: Float,
 	descender: Float,
 
+	typoAscender: Float,
+	typoDescender: Float,
+
 	metadata: {
 		family: String,
 		subfamily: String,
@@ -274,6 +277,12 @@ class Main {
 			sys.FileSystem.createDirectory(localTmpDir);
 
 			var font = opentype.Opentype.loadSync(ttfPath);
+			// notes on metrics
+			// https://glyphsapp.com/tutorials/vertical-metrics
+
+			// font.ascender = font.table.hhea.ascender
+			// font.descender = font.table.hhea.descender
+
 			var fontHeight = font.ascender - font.descender;
 			var fontFileName = haxe.io.Path.withoutDirectory(haxe.io.Path.withoutExtension(ttfPath));
 
@@ -491,6 +500,8 @@ class Main {
 				},
 				ascender: font.ascender / fontHeight,
 				descender: font.descender / fontHeight,
+				typoAscender: font.tables.os2.sTypoAscender / fontHeight,
+				typoDescender: font.tables.os2.sTypoDescender / fontHeight,
 				metadata: {
 					family: processFontNameField(font.names.fontFamily),
 					subfamily: processFontNameField(font.names.fontSubfamily),
@@ -525,6 +536,8 @@ class Main {
 					technique: jsonFont.technique,
 					ascender: jsonFont.ascender,
 					descender: jsonFont.descender,
+					typoAscender: jsonFont.typoAscender,
+					typoDescender: jsonFont.typoDescender,
 					metadata: jsonFont.metadata,
 					fieldRange_px: jsonFont.fieldRange_px,
 					textureSize: jsonFont.textureSize,
