@@ -613,7 +613,9 @@ Main.main = function() {
 	var msdfSearchDirectories = [".","msdfgen","prebuilt"];
 	var _g = 0;
 	while(_g < msdfSearchDirectories.length) {
-		var path = haxe_io_Path.join([msdfSearchDirectories[_g++],msdfBinaryName]);
+		var dir = msdfSearchDirectories[_g];
+		++_g;
+		var path = haxe_io_Path.join([dir,msdfBinaryName]);
 		if(sys_FileSystem.exists(path) && !sys_FileSystem.isDirectory(path)) {
 			Main.msdfgenPath = path;
 			break;
@@ -621,13 +623,22 @@ Main.main = function() {
 	}
 	var showHelp = false;
 	var argHandler_getDoc = function() {
-		return "['--charset'] <path>          : Path of file containing character set\n['--charlist'] <characters>   : List of characters\n['--output-dir', '-o'] <path> : Sets the path of the output font file. External resources will be saved in the same directory\n['--technique'] <name>        : Font rendering technique, one of: msdf, sdf, bitmap\n['--msdfgen'] <path>          : Path of msdfgen executable\n['--size'] <glyphSize>        : Maximum dimension of a glyph in pixels\n['--pxrange'] <range>         : Specifies the width of the range around the shape between the minimum and maximum representable signed distance in pixels\n['--max-texture-size'] <size> : Sets the maximum dimension of the texture atlas\n['--bounds'] <enabled>        : Enables storing glyph bounding boxes in the font (default false)\n['--help']                    : Shows this help\n_ <path>                      : Path of TrueType font file (.ttf)";
+		return "['--charset'] <path>          : Path of file containing character set\n['--charlist'] <characters>   : List of characters\n['--output-dir', '-o'] <path> : Sets the path of the output font file. External resources will be saved in the same directory\n['--technique'] <name>        : Font rendering technique, one of: msdf, sdf, bitmap\n['--msdfgen'] <path>          : Path of msdfgen executable\n['--size'] <glyphSize>        : Maximum dimension of a glyph in pixels\n['--pxrange'] <range>         : Specifies the width of the range around the shape between the minimum and maximum representable signed distance in pixels\n['--max-texture-size'] <size> : Sets the maximum dimension of the texture atlas\n['--bounds'] <enabled>        : Enables storing glyph bounding boxes in the font (default false)\n['--binary'] <enabled>        : Saves the font in the binary format (experimental; default false)\n['--help']                    : Shows this help\n_ <path>                      : Path of TrueType font file (.ttf)";
 	};
 	var argHandler_parse = function(__args) {
 		var __index = 0;
 		while(__index < __args.length) {
 			var _g1 = __args[__index++];
 			switch(_g1) {
+			case "--binary":
+				if(__index + 1 > __args.length) {
+					if(![false][__args.length - 1]) {
+						throw new js__$Boot_HaxeError("Not enough arguments: " + Std.string(__args[__index - 1]) + " expects " + 1);
+					}
+				}
+				Main.saveBinary = __args[__index] == "true";
+				++__index;
+				break;
 			case "--bounds":
 				if(__index + 1 > __args.length) {
 					if(![false][__args.length - 1]) {
@@ -719,7 +730,8 @@ Main.main = function() {
 				++__index;
 				break;
 			default:
-				var path1 = _g1;
+				var arg = _g1;
+				var path1 = arg;
 				if(path1.charAt(0) == "-") {
 					if(["-help","-h","-?"].indexOf(path1) != -1) {
 						showHelp = true;
@@ -762,7 +774,8 @@ Main.main = function() {
 		if(Main.charList == null) {
 			Main.charList = js_node_Fs.readFileSync(Main.charsetPath,{ encoding : "utf8"}).split("");
 		}
-		if(Main.technique != "msdf") {
+		var _g3 = Main.technique;
+		if(_g3 != "msdf") {
 			throw new js__$Boot_HaxeError("Font technique <b>\"" + Main.technique + "\"</b> is not implemented");
 		}
 	} catch( e ) {
@@ -772,18 +785,29 @@ Main.main = function() {
 		process.exit(1);
 		return;
 	}
-	var glyphList = Main.charList.filter(function(c) {
-		return Main.whitespaceCharacters.indexOf(c) == -1;
-	});
-	var _g3 = 0;
+	var _g4 = 0;
 	var _g12 = Main.sourceTtfPaths;
-	while(_g3 < _g12.length) {
-		var ttfPath1 = _g12[_g3];
-		++_g3;
+	while(_g4 < _g12.length) {
+		var ttfPath1 = _g12[_g4];
+		++_g4;
 		sys_FileSystem.createDirectory(Main.localTmpDir);
-		var font = opentype_Opentype.loadSync(ttfPath1);
-		var fontHeight = [font.ascender - font.descender];
+		var font = [opentype_Opentype.loadSync(ttfPath1)];
+		var fontHeight = [font[0].ascender - font[0].descender];
 		var fontFileName = haxe_io_Path.withoutDirectory(haxe_io_Path.withoutExtension(ttfPath1));
+		var glyphList = Main.charList.filter((function(font1) {
+			return function(c) {
+				var g = font1[0].charToGlyph(c);
+				if(font1[0].hasChar(c)) {
+					if(g.xMin != null) {
+						return g.name != ".notdef";
+					} else {
+						return false;
+					}
+				} else {
+					return false;
+				}
+			};
+		})(font));
 		var normalizeFUnits = (function(fontHeight1) {
 			return function(fUnit) {
 				return fUnit / fontHeight1[0];
@@ -803,8 +827,11 @@ Main.main = function() {
 		var _g21 = 0;
 		var _g31 = Main.charList;
 		while(_g21 < _g31.length) {
-			var charCode2 = HxOverrides.cca(_g31[_g21++],0);
-			var e1 = js_node_ChildProcess.spawnSync("" + Main.msdfgenPath + " -font " + ttfPath1 + " " + charCode2 + " -size " + Main.size_px + " " + Main.size_px + " -printmetrics -pxrange " + Main.fieldRange_px + " -autoframe -o \"" + imagePath(charCode2) + "\"> \"" + metricsPath(charCode2) + "\"",{ shell : true, stdio : "inherit"}).status;
+			var char = _g31[_g21];
+			++_g21;
+			var charCode2 = HxOverrides.cca(char,0);
+			var cmd = "" + Main.msdfgenPath + " -font " + ttfPath1 + " " + charCode2 + " -size " + Main.size_px + " " + Main.size_px + " -printmetrics -pxrange " + Main.fieldRange_px + " -autoframe -o \"" + imagePath(charCode2) + "\"> \"" + metricsPath(charCode2) + "\"";
+			var e1 = js_node_ChildProcess.spawnSync(cmd,{ shell : true, stdio : "inherit"}).status;
 			if(e1 != 0) {
 				Console.printFormatted(Console.errorPrefix + ("" + ("" + Main.msdfgenPath + " exited with code " + e1)) + "\n",2);
 				process.exit(e1);
@@ -812,18 +839,25 @@ Main.main = function() {
 			}
 		}
 		Console.printFormatted(Console.logPrefix + "Reading glyph metrics" + "\n",0);
-		var atlasCharacters = { };
+		var this1 = { };
+		var atlasCharacters = this1;
 		var _g22 = 0;
 		var _g32 = Main.charList;
-		while(_g22 < _g32.length) atlasCharacters[_g32[_g22++]] = { advance : 1, glyph : { atlasScale : 0, atlasRect : null, offset : null}};
-		var glyphBounds = { };
+		while(_g22 < _g32.length) {
+			var char1 = _g32[_g22];
+			++_g22;
+			atlasCharacters[char1] = { advance : 1, glyph : { atlasScale : 0, atlasRect : null, offset : null}};
+		}
+		var this2 = { };
+		var glyphBounds = this2;
 		var _g23 = 0;
 		var _g33 = Main.charList;
 		while(_g23 < _g33.length) {
-			var char = _g33[_g23];
+			var char2 = _g33[_g23];
 			++_g23;
-			var metricsFileContent = js_node_Fs.readFileSync(metricsPath(HxOverrides.cca(char,0)),{ encoding : "utf8"});
-			var atlasCharacter = atlasCharacters[char];
+			var charCode3 = HxOverrides.cca(char2,0);
+			var metricsFileContent = js_node_Fs.readFileSync(metricsPath(charCode3),{ encoding : "utf8"});
+			var atlasCharacter = atlasCharacters[char2];
 			var varPattern = new EReg("^\\s*(\\w+)\\s*=([^\n]+)","");
 			var str = metricsFileContent;
 			while(varPattern.match(str)) {
@@ -838,7 +872,7 @@ Main.main = function() {
 					atlasCharacter.advance = normalizeFUnits(value[0] * 64.0);
 					break;
 				case "bounds":
-					glyphBounds[char] = { left : normalizeFUnits(value[0] * 64.0), bottom : normalizeFUnits(value[1] * 64.0), right : normalizeFUnits(value[2] * 64.0), top : normalizeFUnits(value[3] * 64.0)};
+					glyphBounds[char2] = { left : normalizeFUnits(value[0] * 64.0), bottom : normalizeFUnits(value[1] * 64.0), right : normalizeFUnits(value[2] * 64.0), top : normalizeFUnits(value[3] * 64.0)};
 					break;
 				case "scale":
 					var tmp = normalizeFUnits(1 / value[0] * 64.0);
@@ -857,15 +891,17 @@ Main.main = function() {
 		var _g24 = [];
 		var _g34 = 0;
 		while(_g34 < glyphList.length) {
+			var _ = glyphList[_g34];
 			++_g34;
 			_g24.push({ w : Main.size_px, h : Main.size_px});
 		}
+		var blocks = _g24;
 		var atlasW = Main.ceilPot(Main.size_px);
 		var atlasH = Main.ceilPot(Main.size_px);
 		var mode = -1;
 		var fitSucceeded = false;
 		while(atlasW <= Main.maximumTextureSize && atlasH <= Main.maximumTextureSize) {
-			var nodes = BinPacker.fit(_g24,atlasW,atlasH);
+			var nodes = BinPacker.fit(blocks,atlasW,atlasH);
 			if(nodes.indexOf(null) != -1) {
 				if(mode == -1) {
 					atlasW *= 2;
@@ -874,13 +910,14 @@ Main.main = function() {
 				}
 				mode *= -1;
 			} else {
-				var _g4 = 0;
+				var _g41 = 0;
 				var _g35 = glyphList.length;
-				while(_g4 < _g35) {
-					var i = _g4++;
-					var block = _g24[i];
+				while(_g41 < _g35) {
+					var i = _g41++;
+					var char3 = glyphList[i];
+					var block = blocks[i];
 					var node = nodes[i];
-					atlasCharacters[glyphList[i]].glyph.atlasRect = { x : Math.floor(node.x), y : Math.floor(node.y), w : block.w, h : block.h};
+					atlasCharacters[char3].glyph.atlasRect = { x : Math.floor(node.x), y : Math.floor(node.y), w : block.w, h : block.h};
 				}
 				fitSucceeded = true;
 				break;
@@ -891,37 +928,45 @@ Main.main = function() {
 			process.exit(1);
 		}
 		var _g36 = 0;
-		var _g41 = Main.charList;
-		while(_g36 < _g41.length) {
-			var char1 = _g41[_g36];
+		var _g42 = Main.charList;
+		while(_g36 < _g42.length) {
+			var char4 = _g42[_g36];
 			++_g36;
-			if(glyphList.indexOf(char1) == -1) {
-				Reflect.deleteField(atlasCharacters[char1],"glyph");
+			var hasGlyph = glyphList.indexOf(char4) != -1;
+			if(!hasGlyph) {
+				Reflect.deleteField(atlasCharacters[char4],"glyph");
 			}
 		}
-		var mapRgbBytes = haxe_io_Bytes.ofData(new ArrayBuffer(3 * atlasW * atlasH));
+		var channels = 3;
+		var bytesPerChannel = 1;
+		var mapRgbBytes = haxe_io_Bytes.ofData(new ArrayBuffer(channels * bytesPerChannel * atlasW * atlasH));
 		var _g37 = 0;
 		while(_g37 < glyphList.length) {
-			var char2 = glyphList[_g37];
+			var char5 = glyphList[_g37];
 			++_g37;
-			var bmpData = new format_bmp_Reader(new sys_io_FileInput(js_node_Fs.openSync(imagePath(HxOverrides.cca(char2,0)),"r"))).read();
+			var charCode4 = HxOverrides.cca(char5,0);
+			var input = new sys_io_FileInput(js_node_Fs.openSync(imagePath(charCode4),"r"));
+			var bmpData = new format_bmp_Reader(input).read();
 			var glyphHeader = bmpData.header;
 			var glyphBGRA = format_bmp_Tools._extract32(bmpData,format_bmp_Tools.BGRA_MAP,255);
-			var rect = atlasCharacters[char2].glyph.atlasRect;
+			var rect = atlasCharacters[char5].glyph.atlasRect;
 			var _g5 = 0;
-			var _g42 = glyphHeader.width;
-			while(_g5 < _g42) {
+			var _g43 = glyphHeader.width;
+			while(_g5 < _g43) {
 				var x = _g5++;
 				var _g7 = 0;
 				var _g6 = glyphHeader.height;
 				while(_g7 < _g6) {
 					var y = _g7++;
 					var i1 = (y * glyphHeader.width + x) * 4;
-					var g = glyphBGRA.b[i1 + 1];
+					var b = glyphBGRA.b[i1];
+					var g1 = glyphBGRA.b[i1 + 1];
 					var r = glyphBGRA.b[i1 + 2];
-					var mi = ((y + (rect.y | 0)) * atlasW + (x + (rect.x | 0))) * 3;
-					mapRgbBytes.b[mi] = glyphBGRA.b[i1] & 255;
-					mapRgbBytes.b[mi + 1] = g & 255;
+					var mx = x + (rect.x | 0);
+					var my = y + (rect.y | 0);
+					var mi = (my * atlasW + mx) * 3;
+					mapRgbBytes.b[mi] = b & 255;
+					mapRgbBytes.b[mi + 1] = g1 & 255;
 					mapRgbBytes.b[mi + 2] = r & 255;
 				}
 			}
@@ -930,31 +975,41 @@ Main.main = function() {
 		var tmpFiles = js_node_Fs.readdirSync(Main.localTmpDir);
 		var _g38 = 0;
 		while(_g38 < tmpFiles.length) {
-			var name1 = tmpFiles[_g38++];
+			var name1 = tmpFiles[_g38];
+			++_g38;
 			try {
 				js_node_Fs.unlinkSync(haxe_io_Path.join([Main.localTmpDir,name1]));
 			} catch( e2 ) {
+				var e3 = (e2 instanceof js__$Boot_HaxeError) ? e2.val : e2;
 			}
 		}
 		js_node_Fs.rmdirSync(Main.localTmpDir);
 		var textureFileName = "" + fontFileName + "-0.png";
 		var textureFilePath = haxe_io_Path.join([Main.fontOutputDirectory,textureFileName]);
-		Main.writeRgbPng(mapRgbBytes,atlasW,atlasH,textureFilePath);
+		var pngData = format_png_Tools.buildRGB(atlasW,atlasH,mapRgbBytes,9);
+		var pngOutput = new haxe_io_BytesOutput();
+		new format_png_Writer(pngOutput).write(pngData);
+		var pngBytes = pngOutput.getBytes();
+		var data = pngBytes.b;
+		js_node_Fs.writeFileSync(textureFilePath,new js_node_buffer_Buffer(data.buffer,data.byteOffset,pngBytes.length));
 		Console.printFormatted(Console.successPrefix + ("" + ("Saved <b>\"" + textureFilePath + "\"</b> (" + atlasW + "x" + atlasH + ", " + glyphList.length + " glyphs)")) + "\n",0);
-		var kerningMap = { };
+		var this3 = { };
+		var kerningMap = this3;
 		var _g39 = 0;
-		var _g43 = Main.charList;
-		while(_g39 < _g43.length) {
-			var first = _g43[_g39];
+		var _g44 = Main.charList;
+		while(_g39 < _g44.length) {
+			var first = _g44[_g39];
 			++_g39;
 			var _g51 = 0;
 			var _g61 = Main.charList;
 			while(_g51 < _g61.length) {
 				var second = _g61[_g51];
 				++_g51;
-				var kerningAmount_fu = font.getKerningValue(font.charToGlyph(first),font.charToGlyph(second));
-				if(kerningAmount_fu != null && kerningAmount_fu != 0) {
-					kerningMap[first + second] = normalizeFUnits(kerningAmount_fu);
+				var kerningAmount_fu = font[0].charToGlyph(first);
+				var kerningAmount_fu1 = font[0].charToGlyph(second);
+				var kerningAmount_fu2 = font[0].getKerningValue(kerningAmount_fu,kerningAmount_fu1);
+				if(kerningAmount_fu2 != null && kerningAmount_fu2 != 0) {
+					kerningMap[first + second] = normalizeFUnits(kerningAmount_fu2);
 				}
 			}
 		}
@@ -969,39 +1024,106 @@ Main.main = function() {
 				return StringTools.trim(field.en);
 			};
 		})();
-		var font1 = Main.textureAtlasFontVersion;
-		var font2 = font.ascender / fontHeight[0];
-		var font3 = font.descender / fontHeight[0];
-		var font4 = processFontNameField(font.names.fontFamily);
-		var font5 = processFontNameField(font.names.fontSubfamily);
-		var font6 = processFontNameField(font.names.version);
-		var font7 = processFontNameField(font.names.postScriptName);
-		var font8 = processFontNameField(font.names.copyright);
-		var font9 = processFontNameField(font.names.trademark);
-		var font10 = processFontNameField(font.names.manufacturer);
-		var font11 = processFontNameField(font.names.manufacturerURL);
-		var font12 = processFontNameField(font.names.designerURL);
-		var font13 = processFontNameField(font.names.license);
-		var font14 = processFontNameField(font.names.licenseURL);
-		var font15 = { format : "TextureAtlasFont", version : font1, technique : "msdf", characters : atlasCharacters, kerning : kerningMap, textures : [[{ localPath : textureFileName}]], textureSize : { w : atlasW, h : atlasH}, ascender : font2, descender : font3, metadata : { family : font4, subfamily : font5, version : font6, postScriptName : font7, copyright : font8, trademark : font9, manufacturer : font10, manufacturerURL : font11, designerURL : font12, license : font13, licenseURL : font14, height_funits : fontHeight[0], funitsPerEm : font.unitsPerEm}, glyphBounds : Main.storeBounds ? glyphBounds : null, fieldRange_px : Main.fieldRange_px};
+		var jsonFont = Main.textureAtlasFontVersion;
+		var jsonFont1 = font[0].ascender / fontHeight[0];
+		var jsonFont2 = font[0].descender / fontHeight[0];
+		var jsonFont3 = font[0].tables.os2.sTypoAscender / fontHeight[0];
+		var jsonFont4 = font[0].tables.os2.sTypoDescender / fontHeight[0];
+		var jsonFont5 = processFontNameField(font[0].names.fontFamily);
+		var jsonFont6 = processFontNameField(font[0].names.fontSubfamily);
+		var jsonFont7 = processFontNameField(font[0].names.version);
+		var jsonFont8 = processFontNameField(font[0].names.postScriptName);
+		var jsonFont9 = processFontNameField(font[0].names.copyright);
+		var jsonFont10 = processFontNameField(font[0].names.trademark);
+		var jsonFont11 = processFontNameField(font[0].names.manufacturer);
+		var jsonFont12 = processFontNameField(font[0].names.manufacturerURL);
+		var jsonFont13 = processFontNameField(font[0].names.designerURL);
+		var jsonFont14 = processFontNameField(font[0].names.license);
+		var jsonFont15 = processFontNameField(font[0].names.licenseURL);
+		var jsonFont16 = { format : "TextureAtlasFontJson", version : jsonFont, technique : "msdf", characters : atlasCharacters, kerning : kerningMap, textures : [[{ localPath : textureFileName}]], textureSize : { w : atlasW, h : atlasH}, ascender : jsonFont1, descender : jsonFont2, typoAscender : jsonFont3, typoDescender : jsonFont4, metadata : { family : jsonFont5, subfamily : jsonFont6, version : jsonFont7, postScriptName : jsonFont8, copyright : jsonFont9, trademark : jsonFont10, manufacturer : jsonFont11, manufacturerURL : jsonFont12, designerURL : jsonFont13, license : jsonFont14, licenseURL : jsonFont15, height_funits : fontHeight[0], funitsPerEm : font[0].unitsPerEm}, glyphBounds : Main.storeBounds ? glyphBounds : null, fieldRange_px : Main.fieldRange_px};
 		if(Main.fontOutputDirectory != "") {
 			sys_FileSystem.createDirectory(Main.fontOutputDirectory);
 		}
-		var fontOutputPath = haxe_io_Path.join([Main.fontOutputDirectory,fontFileName + ".json"]);
-		js_node_Fs.writeFileSync(fontOutputPath,JSON.stringify(font15,null,"\t"));
-		Console.printFormatted(Console.successPrefix + ("" + ("Saved <b>\"" + fontOutputPath + "\"</b>")) + "\n",0);
+		var fontJsonOutputPath = haxe_io_Path.join([Main.fontOutputDirectory,fontFileName + ".json"]);
+		js_node_Fs.writeFileSync(fontJsonOutputPath,JSON.stringify(jsonFont16,null,"\t"));
+		Console.printFormatted(Console.successPrefix + ("" + ("Saved <b>\"" + fontJsonOutputPath + "\"</b>")) + "\n",0);
+		if(Main.saveBinary) {
+			var header = { format : "TextureAtlasFontBinary", version : Main.textureAtlasFontVersion, technique : jsonFont16.technique, ascender : jsonFont16.ascender, descender : jsonFont16.descender, typoAscender : jsonFont16.typoAscender, typoDescender : jsonFont16.typoDescender, metadata : jsonFont16.metadata, fieldRange_px : jsonFont16.fieldRange_px, textureSize : jsonFont16.textureSize, charList : Main.charList, kerningPairs : Reflect.fields(jsonFont16.kerning), characters : null, kerning : null, glyphBounds : null, textures : null};
+			var payload = new haxe_io_BytesOutput();
+			var payloadPos = 0;
+			var characterDataBytes = new haxe_io_BytesOutput();
+			var characterDataLength_bytes = 24;
+			var tmp3 = Main.charList.length * characterDataLength_bytes;
+			var _g310 = 0;
+			var _g45 = Main.charList;
+			while(_g310 < _g45.length) {
+				var character = _g45[_g310];
+				++_g310;
+				var characterData = atlasCharacters[character];
+				characterDataBytes.writeFloat(characterData.advance);
+				var glyph = characterData.glyph != null ? characterData.glyph : { atlasRect : { x : 0, y : 0, w : 0, h : 0}, atlasScale : 0.0, offset : { x : 0.0, y : 0.0}};
+				characterDataBytes.writeUInt16(glyph.atlasRect.x);
+				characterDataBytes.writeUInt16(glyph.atlasRect.y);
+				characterDataBytes.writeUInt16(glyph.atlasRect.w);
+				characterDataBytes.writeUInt16(glyph.atlasRect.h);
+				characterDataBytes.writeFloat(glyph.atlasScale);
+				characterDataBytes.writeFloat(glyph.offset.x);
+				characterDataBytes.writeFloat(glyph.offset.y);
+			}
+			payload.write(characterDataBytes.getBytes());
+			header.characters = { payloadBytes : { start : payloadPos, length : characterDataBytes.b.pos}};
+			payloadPos = payload.b.pos;
+			var kerningBytes = new haxe_io_BytesOutput();
+			var kerningDataLength_bytes = 4;
+			var tmp4 = kerningDataLength_bytes * Reflect.fields(jsonFont16.kerning).length;
+			var _g311 = 0;
+			var _g46 = Reflect.fields(jsonFont16.kerning);
+			while(_g311 < _g46.length) {
+				var k = _g46[_g311];
+				++_g311;
+				kerningBytes.writeFloat(jsonFont16.kerning[k]);
+			}
+			payload.write(kerningBytes.getBytes());
+			header.kerning = { payloadBytes : { start : payloadPos, length : kerningBytes.b.pos}};
+			payloadPos = payload.b.pos;
+			if(Main.storeBounds) {
+				var boundsBytes = new haxe_io_BytesOutput();
+				var boundsDataLength_bytes = 16;
+				var tmp5 = boundsDataLength_bytes * Reflect.fields(glyphBounds).length;
+				var _g312 = 0;
+				var _g47 = Main.charList;
+				while(_g312 < _g47.length) {
+					var character1 = _g47[_g312];
+					++_g312;
+					var bounds = glyphBounds[character1];
+					if(bounds == null) {
+						bounds = { left : 0, right : 0, top : 0, bottom : 0};
+					}
+					boundsBytes.writeFloat(bounds.top);
+					boundsBytes.writeFloat(bounds.right);
+					boundsBytes.writeFloat(bounds.bottom);
+					boundsBytes.writeFloat(bounds.left);
+				}
+				header.glyphBounds = { payloadBytes : { start : payloadPos, length : boundsBytes.b.pos}};
+				payloadPos = payload.b.pos;
+			}
+			payload.write(pngBytes);
+			header.textures = [[{ payloadBytes : { start : payloadPos, length : pngBytes.length}}]];
+			payloadPos = payload.b.pos;
+			var binaryFontOutput = new haxe_io_BytesOutput();
+			binaryFontOutput.writeString(JSON.stringify(header));
+			binaryFontOutput.writeByte(0);
+			binaryFontOutput.write(payload.getBytes());
+			var fontBinOutputPath = haxe_io_Path.join([Main.fontOutputDirectory,fontFileName + ".bin"]);
+			var bytes = binaryFontOutput.getBytes();
+			var data1 = bytes.b;
+			js_node_Fs.writeFileSync(fontBinOutputPath,new js_node_buffer_Buffer(data1.buffer,data1.byteOffset,bytes.length));
+			Console.printFormatted(Console.successPrefix + ("" + ("Saved <b>\"" + fontBinOutputPath + "\"</b>")) + "\n",0);
+		}
 	}
 };
 Main.ceilPot = function(x) {
 	return Math.pow(2,Math.ceil(Math.log(x) / Math.log(2))) | 0;
-};
-Main.writeRgbPng = function(rgbBytes,w,h,name) {
-	var pngData = format_png_Tools.buildRGB(w,h,rgbBytes,9);
-	var pngBytes = new haxe_io_BytesOutput();
-	new format_png_Writer(pngBytes).write(pngData);
-	var bytes = pngBytes.getBytes();
-	var data = bytes.b;
-	js_node_Fs.writeFileSync(name,new js_node_buffer_Buffer(data.buffer,data.byteOffset,bytes.length));
 };
 Math.__name__ = true;
 var StringTools = function() { };
@@ -1077,6 +1199,21 @@ haxe_io_Output.prototype = {
 			var k = this.writeBytes(s,pos,len);
 			pos += k;
 			len -= k;
+		}
+	}
+	,writeFloat: function(x) {
+		this.writeInt32(haxe_io_FPHelper.floatToI32(x));
+	}
+	,writeUInt16: function(x) {
+		if(x < 0 || x >= 65536) {
+			throw new js__$Boot_HaxeError(haxe_io_Error.Overflow);
+		}
+		if(this.bigEndian) {
+			this.writeByte(x >> 8);
+			this.writeByte(x & 255);
+		} else {
+			this.writeByte(x & 255);
+			this.writeByte(x >> 8);
 		}
 	}
 	,writeInt32: function(x) {
@@ -1695,6 +1832,12 @@ haxe_io_Error.OutsideBounds = ["OutsideBounds",2];
 haxe_io_Error.OutsideBounds.toString = $estr;
 haxe_io_Error.OutsideBounds.__enum__ = haxe_io_Error;
 haxe_io_Error.Custom = function(e) { var $x = ["Custom",3,e]; $x.__enum__ = haxe_io_Error; $x.toString = $estr; return $x; };
+var haxe_io_FPHelper = function() { };
+haxe_io_FPHelper.__name__ = true;
+haxe_io_FPHelper.floatToI32 = function(f) {
+	haxe_io_FPHelper.helper.setFloat32(0,f,true);
+	return haxe_io_FPHelper.helper.getInt32(0,true);
+};
 var haxe_io_Path = function(path) {
 	switch(path) {
 	case ".":case "..":
@@ -4111,8 +4254,9 @@ Main.size_px = 32;
 Main.fieldRange_px = 2;
 Main.maximumTextureSize = 4096;
 Main.storeBounds = false;
-Main.whitespaceCharacters = [" ","\t"];
+Main.saveBinary = false;
 format_bmp_Tools.BGRA_MAP = [3,2,1,0];
+haxe_io_FPHelper.helper = new DataView(new ArrayBuffer(8));
 pako_Deflate.DEFAULT_OPTIONS = { level : -1, method : 8, chunkSize : 16384, windowBits : 15, memLevel : 8, strategy : 0, raw : false, gzip : false, header : null, dictionary : null};
 pako_zlib_CRC32.crcTable = pako_zlib_CRC32.makeTable();
 pako_zlib_Trees.extra_lbits = haxe_io__$UInt16Array_UInt16Array_$Impl_$.fromArray([0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0]);

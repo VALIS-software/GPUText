@@ -1,5 +1,5 @@
 {
-	"format": "TextureAtlasFont",
+	"format": "TextureAtlasFontJson",
 	"version": 0,
 	"technique": "msdf",
 	"characters": {
@@ -1842,6 +1842,8 @@
 	},
 	"ascender": 0.7848691287199713,
 	"descender": -0.2151308712800287,
+	"typoAscender": 0.5618501254930083,
+	"typoDescender": -0.17640731444962351,
 	"metadata": {
 		"family": "Open Sans",
 		"subfamily": "Regular",
