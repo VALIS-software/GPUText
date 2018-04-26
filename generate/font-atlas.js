@@ -1029,26 +1029,27 @@ Main.main = function() {
 		var jsonFont2 = font[0].descender / fontHeight[0];
 		var jsonFont3 = font[0].tables.os2.sTypoAscender / fontHeight[0];
 		var jsonFont4 = font[0].tables.os2.sTypoDescender / fontHeight[0];
-		var jsonFont5 = processFontNameField(font[0].names.fontFamily);
-		var jsonFont6 = processFontNameField(font[0].names.fontSubfamily);
-		var jsonFont7 = processFontNameField(font[0].names.version);
-		var jsonFont8 = processFontNameField(font[0].names.postScriptName);
-		var jsonFont9 = processFontNameField(font[0].names.copyright);
-		var jsonFont10 = processFontNameField(font[0].names.trademark);
-		var jsonFont11 = processFontNameField(font[0].names.manufacturer);
-		var jsonFont12 = processFontNameField(font[0].names.manufacturerURL);
-		var jsonFont13 = processFontNameField(font[0].names.designerURL);
-		var jsonFont14 = processFontNameField(font[0].names.license);
-		var jsonFont15 = processFontNameField(font[0].names.licenseURL);
-		var jsonFont16 = { format : "TextureAtlasFontJson", version : jsonFont, technique : "msdf", characters : atlasCharacters, kerning : kerningMap, textures : [[{ localPath : textureFileName}]], textureSize : { w : atlasW, h : atlasH}, ascender : jsonFont1, descender : jsonFont2, typoAscender : jsonFont3, typoDescender : jsonFont4, metadata : { family : jsonFont5, subfamily : jsonFont6, version : jsonFont7, postScriptName : jsonFont8, copyright : jsonFont9, trademark : jsonFont10, manufacturer : jsonFont11, manufacturerURL : jsonFont12, designerURL : jsonFont13, license : jsonFont14, licenseURL : jsonFont15, height_funits : fontHeight[0], funitsPerEm : font[0].unitsPerEm}, glyphBounds : Main.storeBounds ? glyphBounds : null, fieldRange_px : Main.fieldRange_px};
+		var jsonFont5 = font[0].tables.os2.sxHeight / fontHeight[0];
+		var jsonFont6 = processFontNameField(font[0].names.fontFamily);
+		var jsonFont7 = processFontNameField(font[0].names.fontSubfamily);
+		var jsonFont8 = processFontNameField(font[0].names.version);
+		var jsonFont9 = processFontNameField(font[0].names.postScriptName);
+		var jsonFont10 = processFontNameField(font[0].names.copyright);
+		var jsonFont11 = processFontNameField(font[0].names.trademark);
+		var jsonFont12 = processFontNameField(font[0].names.manufacturer);
+		var jsonFont13 = processFontNameField(font[0].names.manufacturerURL);
+		var jsonFont14 = processFontNameField(font[0].names.designerURL);
+		var jsonFont15 = processFontNameField(font[0].names.license);
+		var jsonFont16 = processFontNameField(font[0].names.licenseURL);
+		var jsonFont17 = { format : "TextureAtlasFontJson", version : jsonFont, technique : "msdf", characters : atlasCharacters, kerning : kerningMap, textures : [[{ localPath : textureFileName}]], textureSize : { w : atlasW, h : atlasH}, ascender : jsonFont1, descender : jsonFont2, typoAscender : jsonFont3, typoDescender : jsonFont4, lowercaseHeight : jsonFont5, metadata : { family : jsonFont6, subfamily : jsonFont7, version : jsonFont8, postScriptName : jsonFont9, copyright : jsonFont10, trademark : jsonFont11, manufacturer : jsonFont12, manufacturerURL : jsonFont13, designerURL : jsonFont14, license : jsonFont15, licenseURL : jsonFont16, height_funits : fontHeight[0], funitsPerEm : font[0].unitsPerEm}, glyphBounds : Main.storeBounds ? glyphBounds : null, fieldRange_px : Main.fieldRange_px};
 		if(Main.fontOutputDirectory != "") {
 			sys_FileSystem.createDirectory(Main.fontOutputDirectory);
 		}
 		var fontJsonOutputPath = haxe_io_Path.join([Main.fontOutputDirectory,fontFileName + ".json"]);
-		js_node_Fs.writeFileSync(fontJsonOutputPath,JSON.stringify(jsonFont16,null,"\t"));
+		js_node_Fs.writeFileSync(fontJsonOutputPath,JSON.stringify(jsonFont17,null,"\t"));
 		Console.printFormatted(Console.successPrefix + ("" + ("Saved <b>\"" + fontJsonOutputPath + "\"</b>")) + "\n",0);
 		if(Main.saveBinary) {
-			var header = { format : "TextureAtlasFontBinary", version : Main.textureAtlasFontVersion, technique : jsonFont16.technique, ascender : jsonFont16.ascender, descender : jsonFont16.descender, typoAscender : jsonFont16.typoAscender, typoDescender : jsonFont16.typoDescender, metadata : jsonFont16.metadata, fieldRange_px : jsonFont16.fieldRange_px, textureSize : jsonFont16.textureSize, charList : Main.charList, kerningPairs : Reflect.fields(jsonFont16.kerning), characters : null, kerning : null, glyphBounds : null, textures : null};
+			var header = { format : "TextureAtlasFontBinary", version : Main.textureAtlasFontVersion, technique : jsonFont17.technique, ascender : jsonFont17.ascender, descender : jsonFont17.descender, typoAscender : jsonFont17.typoAscender, typoDescender : jsonFont17.typoDescender, lowercaseHeight : jsonFont17.lowercaseHeight, metadata : jsonFont17.metadata, fieldRange_px : jsonFont17.fieldRange_px, textureSize : jsonFont17.textureSize, charList : Main.charList, kerningPairs : Reflect.fields(jsonFont17.kerning), characters : null, kerning : null, glyphBounds : null, textures : null};
 			var payload = new haxe_io_BytesOutput();
 			var payloadPos = 0;
 			var characterDataBytes = new haxe_io_BytesOutput();
@@ -1075,13 +1076,13 @@ Main.main = function() {
 			payloadPos = payload.b.pos;
 			var kerningBytes = new haxe_io_BytesOutput();
 			var kerningDataLength_bytes = 4;
-			var tmp4 = kerningDataLength_bytes * Reflect.fields(jsonFont16.kerning).length;
+			var tmp4 = kerningDataLength_bytes * Reflect.fields(jsonFont17.kerning).length;
 			var _g311 = 0;
-			var _g46 = Reflect.fields(jsonFont16.kerning);
+			var _g46 = Reflect.fields(jsonFont17.kerning);
 			while(_g311 < _g46.length) {
 				var k = _g46[_g311];
 				++_g311;
-				kerningBytes.writeFloat(jsonFont16.kerning[k]);
+				kerningBytes.writeFloat(jsonFont17.kerning[k]);
 			}
 			payload.write(kerningBytes.getBytes());
 			header.kerning = { payloadBytes : { start : payloadPos, length : kerningBytes.b.pos}};
@@ -4243,7 +4244,7 @@ Console.successPrefix = "<b><light_green>><//> ";
 Console.unicodeCompatibilityMode = Sys.systemName() == "Windows" ? 1 : 0;
 Console.unicodeCompatibilityEnabled = false;
 Console.formatTagPattern = new EReg("<(/)?([^><{}\\s]*|{[^}<>]*})>","g");
-Main.textureAtlasFontVersion = 0;
+Main.textureAtlasFontVersion = 1;
 Main.technique = "msdf";
 Main.msdfgenPath = "prebuilt/msdfgen";
 Main.charsetPath = "charsets/ascii.txt";
