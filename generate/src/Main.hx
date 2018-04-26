@@ -94,6 +94,8 @@ typedef TextureAtlasFont = {
 	typoAscender: Float,
 	typoDescender: Float,
 
+	lowercaseHeight: Float,
+
 	metadata: {
 		family: String,
 		subfamily: String,
@@ -131,7 +133,7 @@ typedef BinaryDataField = {key: String, type: DataType, length_bytes: Int};
 
 class Main {
 
-	static var textureAtlasFontVersion = 0;
+	static var textureAtlasFontVersion = 1;
 
 	static var technique:TextureFontTechnique = MSDF;
 
@@ -279,6 +281,7 @@ class Main {
 			var font = opentype.Opentype.loadSync(ttfPath);
 			// notes on metrics
 			// https://glyphsapp.com/tutorials/vertical-metrics
+			// https://silnrsi.github.io/FDBP/en-US/Line_Metrics.html
 
 			// font.ascender = font.table.hhea.ascender
 			// font.descender = font.table.hhea.descender
@@ -502,6 +505,7 @@ class Main {
 				descender: font.descender / fontHeight,
 				typoAscender: font.tables.os2.sTypoAscender / fontHeight,
 				typoDescender: font.tables.os2.sTypoDescender / fontHeight,
+				lowercaseHeight: font.tables.os2.sxHeight / fontHeight,
 				metadata: {
 					family: processFontNameField(font.names.fontFamily),
 					subfamily: processFontNameField(font.names.fontSubfamily),
@@ -538,6 +542,7 @@ class Main {
 					descender: jsonFont.descender,
 					typoAscender: jsonFont.typoAscender,
 					typoDescender: jsonFont.typoDescender,
+					lowercaseHeight: jsonFont.lowercaseHeight,
 					metadata: jsonFont.metadata,
 					fieldRange_px: jsonFont.fieldRange_px,
 					textureSize: jsonFont.textureSize,
