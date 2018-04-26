@@ -1,3 +1,9 @@
+/*
+	Generates OpenType.js externs in opentype/
+
+	Usage: haxe --run GenerateOpentypeExterns.hx
+*/
+
 import haxe.macro.Expr;
 
 using StringTools;
@@ -55,9 +61,52 @@ class GenerateOpentypeExterns {
 			var createdTimestamp: Int;
 			var tables:{
 				os2: {
-					usWeightClass: String,
-					usWidthClass: String,
-					fsSelection: String,
+					version: Int,
+					xAvgCharWidth: Int,
+					usWeightClass: Int,
+					usWidthClass: Int,
+					fsType: Int,
+					ySubscriptXSize: Int,
+					ySubscriptYSize: Int,
+					ySubscriptXOffset: Int,
+					ySubscriptYOffset: Int,
+					ySuperscriptXSize: Int,
+					ySuperscriptYSize: Int,
+					ySuperscriptXOffset: Int,
+					ySuperscriptYOffset: Int,
+					yStrikeoutSize: Int,
+					yStrikeoutPosition: Int,
+					sFamilyClass: Int,
+					bFamilyType: Int,
+					bSerifStyle: Int,
+					bWeight: Int,
+					bProportion: Int,
+					bContrast: Int,
+					bStrokeVariation: Int,
+					bArmStyle: Int,
+					bLetterform: Int,
+					bMidline: Int,
+					bXHeight: Int,
+					ulUnicodeRange1: Int,
+					ulUnicodeRange2: Int,
+					ulUnicodeRange3: Int,
+					ulUnicodeRange4: Int,
+					achVendID: String,
+					fsSelection: Int,
+					usFirstCharIndex: Int,
+					usLastCharIndex: Int,
+					sTypoAscender: Int,
+					sTypoDescender: Int,
+					sTypoLineGap: Int,
+					usWinAscent: Int,
+					usWinDescent: Int,
+					ulCodePageRange1: Int,
+					ulCodePageRange2: Int,
+					sxHeight: Int,
+					sCapHeight: Int,
+					usDefaultChar: Int,
+					usBreakChar: Int,
+					usMaxContext: Int,
 				}
 			};
 
@@ -278,6 +327,7 @@ class ClosureExternConverter {
 			case 'array': macro :Array<Any>;
 			case 'object': macro :haxe.DynamicAccess<Any>;
 			case 'function': macro :Any;
+			case 'type': macro :Any;
 
 			// convert js type names into haxe type names
 			// this list could be fully completed by iterating all items in js and finding their @:native metadata
