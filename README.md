@@ -7,21 +7,24 @@ Engine agnostic GPU text rendering
 ## Font Atlas Generator
 ##### Usage
 ```
-['--charset'] <path>          : Path of file containing character set
-['--charlist'] <characters>   : List of characters
-['--output-dir', '-o'] <path> : Sets the path of the output font file. External resources will be saved in the same directory
-['--technique'] <name>        : Font rendering technique, one of: msdf, sdf, bitmap
-['--msdfgen'] <path>          : Path of msdfgen executable
-['--size'] <glyphSize>        : Maximum dimension of a glyph in pixels
-['--pxrange'] <range>         : Specifies the width of the range around the shape between the minimum and maximum representable signed distance in pixels
-['--max-texture-size'] <size> : Sets the maximum dimension of the texture atlas
-['--help']                    : Shows this help
-_ <path>                      : Path of TrueType font file
+['--charset'] <path>              : Path of file containing character set
+['--charlist'] <characters>       : List of characters
+['--output-dir', '-o'] <path>     : Sets the path of the output font file. External resources will be saved in the same directory
+['--technique'] <name>            : Font rendering technique, one of: msdf, sdf, bitmap
+['--msdfgen'] <path>              : Path of msdfgen executable
+['--size'] <glyphSize>            : Maximum dimension of a glyph in pixels
+['--pxrange'] <range>             : Specifies the width of the range around the shape between the minimum and maximum representable signed distance in pixels
+['--max-texture-size'] <size>     : Sets the maximum dimension of the texture atlas
+['--bounds'] <enabled>            : Enables storing glyph bounding boxes in the font (default false)
+['--binary'] <enabled>            : Saves the font in the binary format (experimental; default false)
+['--external-textures'] <enabled> : When store textures externally when saving in the binary format
+['--help']                        : Shows this help
+_ <path>                          : Path of TrueType font file (.ttf)
 ```
 
 ##### Example
 ```
-> node font-atlas.js source-fonts/OpenSans/OpenSans-Regular.ttf
+> node font-atlas.js source-fonts/OpenSans/OpenSans-Regular.ttf --binary true
 ```
 
 ##### Building
