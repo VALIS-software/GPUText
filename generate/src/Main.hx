@@ -68,6 +68,26 @@ typedef TextureAtlasCharacter = {
 	?glyph: TextureAtlasGlyph,
 }
 
+typedef FontMetadata = {
+	family: String,
+	subfamily: String,
+	version: String,
+	postScriptName: String,
+
+	copyright: String,
+	trademark: String,
+	manufacturer: String,
+	manufacturerURL: String,
+	designerURL: String,
+	license: String,
+	licenseURL: String,
+
+	// original authoring height
+	// this can be used to reproduce the unnormalized source values of the font
+	height_funits: Float,
+	funitsPerEm: Float,
+}
+
 typedef TextureAtlasFont = {
 	format: GPUTextFormat,
 	version: Int,
@@ -90,37 +110,61 @@ typedef TextureAtlasFont = {
 	// normalized font units
 	ascender: Float,
 	descender: Float,
-
 	typoAscender: Float,
 	typoDescender: Float,
-
 	lowercaseHeight: Float,
 
-	metadata: {
-		family: String,
-		subfamily: String,
-		version: String,
-		postScriptName: String,
-
-		copyright: String,
-		trademark: String,
-		manufacturer: String,
-		manufacturerURL: String,
-		designerURL: String,
-		license: String,
-		licenseURL: String,
-
-		// original authoring height
-		// this can be used to reproduce the unnormalized source values of the font
-		height_funits: Float,
-		funitsPerEm: Float,
-	},
+	metadata: FontMetadata,
 
 	fieldRange_px: Float,
 
 	// glyph bounding boxes in normalized font units
 	// not guaranteed to be included in the font file
 	?glyphBounds: haxe.DynamicAccess<{left: Float, bottom: Float, right: Float, top: Float}>
+}
+
+typedef TextureAtlasFontBinaryHeader = {
+	format: GPUTextFormat,
+	version: Int,
+
+	technique: TextureFontTechnique,
+
+	ascender: Float,
+	descender: Float,
+	typoAscender: Float,
+	typoDescender: Float,
+	lowercaseHeight: Float,
+
+	metadata: FontMetadata,
+
+	fieldRange_px: Float,
+
+	charList: Array<String>,
+	kerningPairs: Array<String>,
+
+	// payload data
+	textures: Array<
+		// array of mipmap levels, where 0 = largest and primary texture (mipmaps may be omitted)
+		Array<ResourceReference>
+	>,
+
+	textureSize: {
+		w: Int,
+		h: Int,
+	},
+
+	characters: {
+		start: Int,
+		length: Int,
+	},
+	kerning: {
+		start: Int,
+		length: Int,
+	},
+	?glyphBounds: {
+		start: Int,
+		length: Int,
+	},
 }
 
 enum DataType {
@@ -150,6 +194,7 @@ class Main {
 	static var maximumTextureSize = 4096;
 	static var storeBounds = false;
 	static var saveBinary = false;
+	static var externalTextures = false;
 
 	static var whitespaceCharacters = [
 		' ', '\t'
@@ -205,6 +250,9 @@ class Main {
 
 			@doc('Saves the font in the binary format (experimental; default false)')
 			['--binary'] => (enabled: Bool) -> saveBinary = enabled,
+
+			@doc('When store textures externally when saving in the binary format')
+			['--external-textures'] => (enabled: Bool) -> externalTextures = enabled,
 
 			// misc
 			@doc('Shows this help')
@@ -460,15 +508,14 @@ class Main {
 			}
 			sys.FileSystem.deleteDirectory(localTmpDir);
 
-			// save png
+			// build png atlas bytes
 			var textureFileName = '$fontFileName-0.png';
 			var textureFilePath = haxe.io.Path.join([fontOutputDirectory, textureFileName]);
+
 			var pngData = format.png.Tools.buildRGB(atlasW, atlasH, mapRgbBytes, 9);
 			var pngOutput = new haxe.io.BytesOutput();
 			new format.png.Writer(pngOutput).write(pngData);
 			var pngBytes = pngOutput.getBytes();
-			sys.io.File.saveBytes(textureFilePath, pngBytes);
-			Console.success('Saved <b>"$textureFilePath"</b> (${atlasW}x${atlasH}, ${glyphList.length} glyphs)');
 
 			// create font descriptor
 			// generate kerning map
@@ -527,14 +574,21 @@ class Main {
 				fieldRange_px: fieldRange_px,
 			}
 
-			if (fontOutputDirectory != '') sys.FileSystem.createDirectory(fontOutputDirectory);
-			var fontJsonOutputPath = haxe.io.Path.join([fontOutputDirectory, fontFileName + '.json']);
-			sys.io.File.saveContent(fontJsonOutputPath, haxe.Json.stringify(jsonFont, null, '\t'));
-			Console.success('Saved <b>"$fontJsonOutputPath"</b>');
+			// Output file writing
 
-			// convert to binary format
-			if (saveBinary) {
-				var header = {
+			if (fontOutputDirectory != '') sys.FileSystem.createDirectory(fontOutputDirectory);
+
+			if (!saveBinary) {
+				var fontJsonOutputPath = haxe.io.Path.join([fontOutputDirectory, fontFileName + '.json']);
+				sys.io.File.saveContent(fontJsonOutputPath, haxe.Json.stringify(jsonFont, null, '\t'));
+				Console.success('Saved <b>"$fontJsonOutputPath"</b>');
+
+				sys.io.File.saveBytes(textureFilePath, pngBytes);
+				Console.success('Saved <b>"$textureFilePath"</b> (${atlasW}x${atlasH}, ${glyphList.length} glyphs)');
+			} else {
+				// convert to binary format
+
+				var header: TextureAtlasFontBinaryHeader = {
 					format: TEXTURE_ATLAS_FONT_BINARY,
 					version: textureAtlasFontVersion,
 					technique: jsonFont.technique,
@@ -563,7 +617,7 @@ class Main {
 
 				// character data payload
 				var characterDataBytes = new haxe.io.BytesOutput();
-				var characterDataLength_bytes = 4 + (4 * 2) + (4 * 3);
+				var characterDataLength_bytes = 4 + (4 * 2) + (3 * 4);
 				characterDataBytes.prepare(charList.length * characterDataLength_bytes);
 				for (character in charList) {
 					var characterData = atlasCharacters.get(character);
@@ -585,11 +639,10 @@ class Main {
 					characterDataBytes.writeFloat(glyph.offset.y);
 				}
 
+				// write character payload
 				payload.write(characterDataBytes.getBytes());
 				header.characters = {
-					payloadBytes: {
-						start: payloadPos, length: characterDataBytes.length
-					}
+					start: payloadPos, length: characterDataBytes.length
 				}
 				payloadPos = payload.length;
 
@@ -602,9 +655,7 @@ class Main {
 				}
 				payload.write(kerningBytes.getBytes());
 				header.kerning = {
-					payloadBytes: {
-						start: payloadPos, length: kerningBytes.length
-					}
+					start: payloadPos, length: kerningBytes.length
 				}
 				payloadPos = payload.length;
 
@@ -624,30 +675,39 @@ class Main {
 						boundsBytes.writeFloat(bounds.left);
 					}
 					header.glyphBounds = {
-						payloadBytes: {
-							start: payloadPos, length: boundsBytes.length
-						}
+						start: payloadPos, length: boundsBytes.length
 					}
 					payloadPos = payload.length;
 				}
 
-				// atlas textures png payload
-				payload.write(pngBytes);
-				header.textures = [[
-					{
-						payloadBytes: {
-							start: payloadPos, length: pngBytes.length
+				// atlas textures png payload (or external file)
+				if (externalTextures) {
+					sys.io.File.saveBytes(textureFilePath, pngBytes);
+					Console.success('Saved <b>"$textureFilePath"</b> (${atlasW}x${atlasH}, ${glyphList.length} glyphs)');
+
+					header.textures = [[
+						{
+							{localPath: textureFileName}
 						}
-					}
-				]];
-				payloadPos = payload.length;
+					]];
+				} else {
+					payload.write(pngBytes);
+					header.textures = [[
+						{
+							payloadBytes: {
+								start: payloadPos, length: pngBytes.length
+							}
+						}
+					]];
+					payloadPos = payload.length;
+				}
 
 				var binaryFontOutput = new haxe.io.BytesOutput();
 				binaryFontOutput.writeString(haxe.Json.stringify(header));
 				binaryFontOutput.writeByte(0x00);
 				binaryFontOutput.write(payload.getBytes());
 
-				var fontBinOutputPath = haxe.io.Path.join([fontOutputDirectory, fontFileName + '.bin']);
+				var fontBinOutputPath = haxe.io.Path.join([fontOutputDirectory, fontFileName + '.' + technique + '.bin']);
 				sys.io.File.saveBytes(fontBinOutputPath, binaryFontOutput.getBytes());
 				Console.success('Saved <b>"$fontBinOutputPath"</b>');
 			}
