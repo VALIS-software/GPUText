@@ -623,7 +623,7 @@ Main.main = function() {
 	}
 	var showHelp = false;
 	var argHandler_getDoc = function() {
-		return "['--charset'] <path>          : Path of file containing character set\n['--charlist'] <characters>   : List of characters\n['--output-dir', '-o'] <path> : Sets the path of the output font file. External resources will be saved in the same directory\n['--technique'] <name>        : Font rendering technique, one of: msdf, sdf, bitmap\n['--msdfgen'] <path>          : Path of msdfgen executable\n['--size'] <glyphSize>        : Maximum dimension of a glyph in pixels\n['--pxrange'] <range>         : Specifies the width of the range around the shape between the minimum and maximum representable signed distance in pixels\n['--max-texture-size'] <size> : Sets the maximum dimension of the texture atlas\n['--bounds'] <enabled>        : Enables storing glyph bounding boxes in the font (default false)\n['--binary'] <enabled>        : Saves the font in the binary format (experimental; default false)\n['--help']                    : Shows this help\n_ <path>                      : Path of TrueType font file (.ttf)";
+		return "['--charset'] <path>              : Path of file containing character set\n['--charlist'] <characters>       : List of characters\n['--output-dir', '-o'] <path>     : Sets the path of the output font file. External resources will be saved in the same directory\n['--technique'] <name>            : Font rendering technique, one of: msdf, sdf, bitmap\n['--msdfgen'] <path>              : Path of msdfgen executable\n['--size'] <glyphSize>            : Maximum dimension of a glyph in pixels\n['--pxrange'] <range>             : Specifies the width of the range around the shape between the minimum and maximum representable signed distance in pixels\n['--max-texture-size'] <size>     : Sets the maximum dimension of the texture atlas\n['--bounds'] <enabled>            : Enables storing glyph bounding boxes in the font (default false)\n['--binary'] <enabled>            : Saves the font in the binary format (experimental; default false)\n['--external-textures'] <enabled> : When store textures externally when saving in the binary format\n['--help']                        : Shows this help\n_ <path>                          : Path of TrueType font file (.ttf)";
 	};
 	var argHandler_parse = function(__args) {
 		var __index = 0;
@@ -664,6 +664,15 @@ Main.main = function() {
 					}
 				}
 				Main.charsetPath = __args[__index];
+				++__index;
+				break;
+			case "--external-textures":
+				if(__index + 1 > __args.length) {
+					if(![false][__args.length - 1]) {
+						throw new js__$Boot_HaxeError("Not enough arguments: " + Std.string(__args[__index - 1]) + " expects " + 1);
+					}
+				}
+				Main.externalTextures = __args[__index] == "true";
 				++__index;
 				break;
 			case "--help":
@@ -990,9 +999,6 @@ Main.main = function() {
 		var pngOutput = new haxe_io_BytesOutput();
 		new format_png_Writer(pngOutput).write(pngData);
 		var pngBytes = pngOutput.getBytes();
-		var data = pngBytes.b;
-		js_node_Fs.writeFileSync(textureFilePath,new js_node_buffer_Buffer(data.buffer,data.byteOffset,pngBytes.length));
-		Console.printFormatted(Console.successPrefix + ("" + ("Saved <b>\"" + textureFilePath + "\"</b> (" + atlasW + "x" + atlasH + ", " + glyphList.length + " glyphs)")) + "\n",0);
 		var this3 = { };
 		var kerningMap = this3;
 		var _g39 = 0;
@@ -1045,10 +1051,14 @@ Main.main = function() {
 		if(Main.fontOutputDirectory != "") {
 			sys_FileSystem.createDirectory(Main.fontOutputDirectory);
 		}
-		var fontJsonOutputPath = haxe_io_Path.join([Main.fontOutputDirectory,fontFileName + ".json"]);
-		js_node_Fs.writeFileSync(fontJsonOutputPath,JSON.stringify(jsonFont17,null,"\t"));
-		Console.printFormatted(Console.successPrefix + ("" + ("Saved <b>\"" + fontJsonOutputPath + "\"</b>")) + "\n",0);
-		if(Main.saveBinary) {
+		if(!Main.saveBinary) {
+			var fontJsonOutputPath = haxe_io_Path.join([Main.fontOutputDirectory,fontFileName + ".json"]);
+			js_node_Fs.writeFileSync(fontJsonOutputPath,JSON.stringify(jsonFont17,null,"\t"));
+			Console.printFormatted(Console.successPrefix + ("" + ("Saved <b>\"" + fontJsonOutputPath + "\"</b>")) + "\n",0);
+			var data = pngBytes.b;
+			js_node_Fs.writeFileSync(textureFilePath,new js_node_buffer_Buffer(data.buffer,data.byteOffset,pngBytes.length));
+			Console.printFormatted(Console.successPrefix + ("" + ("Saved <b>\"" + textureFilePath + "\"</b> (" + atlasW + "x" + atlasH + ", " + glyphList.length + " glyphs)")) + "\n",0);
+		} else {
 			var header = { format : "TextureAtlasFontBinary", version : Main.textureAtlasFontVersion, technique : jsonFont17.technique, ascender : jsonFont17.ascender, descender : jsonFont17.descender, typoAscender : jsonFont17.typoAscender, typoDescender : jsonFont17.typoDescender, lowercaseHeight : jsonFont17.lowercaseHeight, metadata : jsonFont17.metadata, fieldRange_px : jsonFont17.fieldRange_px, textureSize : jsonFont17.textureSize, charList : Main.charList, kerningPairs : Reflect.fields(jsonFont17.kerning), characters : null, kerning : null, glyphBounds : null, textures : null};
 			var payload = new haxe_io_BytesOutput();
 			var payloadPos = 0;
@@ -1072,7 +1082,7 @@ Main.main = function() {
 				characterDataBytes.writeFloat(glyph.offset.y);
 			}
 			payload.write(characterDataBytes.getBytes());
-			header.characters = { payloadBytes : { start : payloadPos, length : characterDataBytes.b.pos}};
+			header.characters = { start : payloadPos, length : characterDataBytes.b.pos};
 			payloadPos = payload.b.pos;
 			var kerningBytes = new haxe_io_BytesOutput();
 			var kerningDataLength_bytes = 4;
@@ -1085,7 +1095,7 @@ Main.main = function() {
 				kerningBytes.writeFloat(jsonFont17.kerning[k]);
 			}
 			payload.write(kerningBytes.getBytes());
-			header.kerning = { payloadBytes : { start : payloadPos, length : kerningBytes.b.pos}};
+			header.kerning = { start : payloadPos, length : kerningBytes.b.pos};
 			payloadPos = payload.b.pos;
 			if(Main.storeBounds) {
 				var boundsBytes = new haxe_io_BytesOutput();
@@ -1105,20 +1115,27 @@ Main.main = function() {
 					boundsBytes.writeFloat(bounds.bottom);
 					boundsBytes.writeFloat(bounds.left);
 				}
-				header.glyphBounds = { payloadBytes : { start : payloadPos, length : boundsBytes.b.pos}};
+				header.glyphBounds = { start : payloadPos, length : boundsBytes.b.pos};
 				payloadPos = payload.b.pos;
 			}
-			payload.write(pngBytes);
-			header.textures = [[{ payloadBytes : { start : payloadPos, length : pngBytes.length}}]];
-			payloadPos = payload.b.pos;
+			if(Main.externalTextures) {
+				var data1 = pngBytes.b;
+				js_node_Fs.writeFileSync(textureFilePath,new js_node_buffer_Buffer(data1.buffer,data1.byteOffset,pngBytes.length));
+				Console.printFormatted(Console.successPrefix + ("" + ("Saved <b>\"" + textureFilePath + "\"</b> (" + atlasW + "x" + atlasH + ", " + glyphList.length + " glyphs)")) + "\n",0);
+				header.textures = [[{ localPath : textureFileName}]];
+			} else {
+				payload.write(pngBytes);
+				header.textures = [[{ payloadBytes : { start : payloadPos, length : pngBytes.length}}]];
+				payloadPos = payload.b.pos;
+			}
 			var binaryFontOutput = new haxe_io_BytesOutput();
 			binaryFontOutput.writeString(JSON.stringify(header));
 			binaryFontOutput.writeByte(0);
 			binaryFontOutput.write(payload.getBytes());
-			var fontBinOutputPath = haxe_io_Path.join([Main.fontOutputDirectory,fontFileName + ".bin"]);
+			var fontBinOutputPath = haxe_io_Path.join([Main.fontOutputDirectory,fontFileName + "." + Main.technique + ".bin"]);
 			var bytes = binaryFontOutput.getBytes();
-			var data1 = bytes.b;
-			js_node_Fs.writeFileSync(fontBinOutputPath,new js_node_buffer_Buffer(data1.buffer,data1.byteOffset,bytes.length));
+			var data2 = bytes.b;
+			js_node_Fs.writeFileSync(fontBinOutputPath,new js_node_buffer_Buffer(data2.buffer,data2.byteOffset,bytes.length));
 			Console.printFormatted(Console.successPrefix + ("" + ("Saved <b>\"" + fontBinOutputPath + "\"</b>")) + "\n",0);
 		}
 	}
@@ -4256,6 +4273,7 @@ Main.fieldRange_px = 2;
 Main.maximumTextureSize = 4096;
 Main.storeBounds = false;
 Main.saveBinary = false;
+Main.externalTextures = false;
 format_bmp_Tools.BGRA_MAP = [3,2,1,0];
 haxe_io_FPHelper.helper = new DataView(new ArrayBuffer(8));
 pako_Deflate.DEFAULT_OPTIONS = { level : -1, method : 8, chunkSize : 16384, windowBits : 15, memLevel : 8, strategy : 0, raw : false, gzip : false, header : null, dictionary : null};
