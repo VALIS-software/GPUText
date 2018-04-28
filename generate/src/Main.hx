@@ -120,7 +120,7 @@ typedef TextureAtlasFont = {
 
 	// glyph bounding boxes in normalized font units
 	// not guaranteed to be included in the font file
-	?glyphBounds: haxe.DynamicAccess<{left: Float, bottom: Float, right: Float, top: Float}>
+	?glyphBounds: haxe.DynamicAccess<{l: Float, b: Float, r: Float, t: Float}>
 }
 
 typedef TextureAtlasFontBinaryHeader = {
@@ -193,7 +193,7 @@ class Main {
 	static var fieldRange_px: Int = 2;
 	static var maximumTextureSize = 4096;
 	static var storeBounds = false;
-	static var saveBinary = false;
+	static var saveBinary = true;
 	static var externalTextures = false;
 
 	static var whitespaceCharacters = [
@@ -248,7 +248,7 @@ class Main {
 			@doc('Enables storing glyph bounding boxes in the font (default false)')
 			['--bounds'] => (enabled: Bool) -> storeBounds = enabled,
 
-			@doc('Saves the font in the binary format (experimental; default false)')
+			@doc('Saves the font in the binary format (default true)')
 			['--binary'] => (enabled: Bool) -> saveBinary = enabled,
 
 			@doc('When store textures externally when saving in the binary format')
@@ -385,7 +385,7 @@ class Main {
 			}
 
 			// parse the generated metric files and copy values into the atlas character map
-			var glyphBounds = new haxe.DynamicAccess<{left: Float, bottom: Float, right: Float, top: Float}>();
+			var glyphBounds = new haxe.DynamicAccess<{l: Float, b: Float, r: Float, t: Float}>();
 			for (char in charList) {
 				var charCode = char.charCodeAt(0);
 				var metricsFileContent = sys.io.File.getContent(metricsPath(charCode));
@@ -409,7 +409,7 @@ class Main {
 						case 'scale':
 							atlasCharacter.glyph.atlasScale = 1/norm(1/value[0]);
 						case 'bounds':
-							glyphBounds.set(char, {left: norm(value[0]), bottom: norm(value[1]), right: norm(value[2]), top: norm(value[3])});
+							glyphBounds.set(char, {l: norm(value[0]), b: norm(value[1]), r: norm(value[2]), t: norm(value[3])});
 						case 'translate':
 							atlasCharacter.glyph.offset = {x: norm(value[0]), y: norm(value[1])};
 						// case 'range':
@@ -667,12 +667,12 @@ class Main {
 					for (character in charList) {
 						var bounds = glyphBounds.get(character);
 						if (bounds == null) {
-							bounds = { left: 0, right: 0, top: 0, bottom: 0, } 
+							bounds = { l: 0, r: 0, t: 0, b: 0, } 
 						}
-						boundsBytes.writeFloat(bounds.top);
-						boundsBytes.writeFloat(bounds.right);
-						boundsBytes.writeFloat(bounds.bottom);
-						boundsBytes.writeFloat(bounds.left);
+						boundsBytes.writeFloat(bounds.t);
+						boundsBytes.writeFloat(bounds.r);
+						boundsBytes.writeFloat(bounds.b);
+						boundsBytes.writeFloat(bounds.l);
 					}
 					header.glyphBounds = {
 						start: payloadPos, length: boundsBytes.length
