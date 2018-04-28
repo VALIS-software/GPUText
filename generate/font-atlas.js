@@ -623,7 +623,7 @@ Main.main = function() {
 	}
 	var showHelp = false;
 	var argHandler_getDoc = function() {
-		return "['--charset'] <path>              : Path of file containing character set\n['--charlist'] <characters>       : List of characters\n['--output-dir', '-o'] <path>     : Sets the path of the output font file. External resources will be saved in the same directory\n['--technique'] <name>            : Font rendering technique, one of: msdf, sdf, bitmap\n['--msdfgen'] <path>              : Path of msdfgen executable\n['--size'] <glyphSize>            : Maximum dimension of a glyph in pixels\n['--pxrange'] <range>             : Specifies the width of the range around the shape between the minimum and maximum representable signed distance in pixels\n['--max-texture-size'] <size>     : Sets the maximum dimension of the texture atlas\n['--bounds'] <enabled>            : Enables storing glyph bounding boxes in the font (default false)\n['--binary'] <enabled>            : Saves the font in the binary format (experimental; default false)\n['--external-textures'] <enabled> : When store textures externally when saving in the binary format\n['--help']                        : Shows this help\n_ <path>                          : Path of TrueType font file (.ttf)";
+		return "['--charset'] <path>              : Path of file containing character set\n['--charlist'] <characters>       : List of characters\n['--output-dir', '-o'] <path>     : Sets the path of the output font file. External resources will be saved in the same directory\n['--technique'] <name>            : Font rendering technique, one of: msdf, sdf, bitmap\n['--msdfgen'] <path>              : Path of msdfgen executable\n['--size'] <glyphSize>            : Maximum dimension of a glyph in pixels\n['--pxrange'] <range>             : Specifies the width of the range around the shape between the minimum and maximum representable signed distance in pixels\n['--max-texture-size'] <size>     : Sets the maximum dimension of the texture atlas\n['--bounds'] <enabled>            : Enables storing glyph bounding boxes in the font (default false)\n['--binary'] <enabled>            : Saves the font in the binary format (default true)\n['--external-textures'] <enabled> : When store textures externally when saving in the binary format\n['--help']                        : Shows this help\n_ <path>                          : Path of TrueType font file (.ttf)";
 	};
 	var argHandler_parse = function(__args) {
 		var __index = 0;
@@ -881,7 +881,7 @@ Main.main = function() {
 					atlasCharacter.advance = normalizeFUnits(value[0] * 64.0);
 					break;
 				case "bounds":
-					glyphBounds[char2] = { left : normalizeFUnits(value[0] * 64.0), bottom : normalizeFUnits(value[1] * 64.0), right : normalizeFUnits(value[2] * 64.0), top : normalizeFUnits(value[3] * 64.0)};
+					glyphBounds[char2] = { l : normalizeFUnits(value[0] * 64.0), b : normalizeFUnits(value[1] * 64.0), r : normalizeFUnits(value[2] * 64.0), t : normalizeFUnits(value[3] * 64.0)};
 					break;
 				case "scale":
 					var tmp = normalizeFUnits(1 / value[0] * 64.0);
@@ -1108,12 +1108,12 @@ Main.main = function() {
 					++_g312;
 					var bounds = glyphBounds[character1];
 					if(bounds == null) {
-						bounds = { left : 0, right : 0, top : 0, bottom : 0};
+						bounds = { l : 0, r : 0, t : 0, b : 0};
 					}
-					boundsBytes.writeFloat(bounds.top);
-					boundsBytes.writeFloat(bounds.right);
-					boundsBytes.writeFloat(bounds.bottom);
-					boundsBytes.writeFloat(bounds.left);
+					boundsBytes.writeFloat(bounds.t);
+					boundsBytes.writeFloat(bounds.r);
+					boundsBytes.writeFloat(bounds.b);
+					boundsBytes.writeFloat(bounds.l);
 				}
 				header.glyphBounds = { start : payloadPos, length : boundsBytes.b.pos};
 				payloadPos = payload.b.pos;
@@ -4272,7 +4272,7 @@ Main.size_px = 32;
 Main.fieldRange_px = 2;
 Main.maximumTextureSize = 4096;
 Main.storeBounds = false;
-Main.saveBinary = false;
+Main.saveBinary = true;
 Main.externalTextures = false;
 format_bmp_Tools.BGRA_MAP = [3,2,1,0];
 haxe_io_FPHelper.helper = new DataView(new ArrayBuffer(8));
