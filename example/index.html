@@ -50,7 +50,7 @@
 	<canvas></canvas>
 
 	<!--
-	Sandbox to compare
+	Sandbox to compare to DOM
 	<div id="webfont-test" style="
 		position: absolute;
 		color: red;
@@ -102,7 +102,7 @@
 	</div>
 
 	<script src="../gputext.js"></script>
-	<script src="../gputext-webgl.js"></script>
+	<script src="gputext-webgl.js"></script>
 
 	<script>
 		"use strict";
@@ -168,11 +168,11 @@
 		});
 		image.src = `${fontName}-0.png`;
 
-		// debug
+		// debug shader
 		let msdfDebugProgram = GPUTextWebGL.createTextProgram(
 			gl, {}, null,
 			`
-			precision mediump float;     
+			precision mediump float;
 
 			uniform vec4 color;
 			varying vec2 vUv;
