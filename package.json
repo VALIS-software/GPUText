@@ -1,0 +1,31 @@
+{
+  "name": "gputext",
+  "version": "1.0.0",
+  "description": "Engine-agnostic GPU text system",
+  "main": "gputext.js",
+  "directories": {
+    "example": "example"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VALIS-software/GPU-Text.git"
+  },
+  "keywords": [
+    "webgl",
+    "text",
+    "gpu",
+    "text",
+    "text",
+    "text",
+    "rendering"
+  ],
+  "author": "George Corney (haxiomic)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/VALIS-software/GPU-Text/issues"
+  },
+  "homepage": "https://github.com/VALIS-software/GPU-Text#readme"
+}
