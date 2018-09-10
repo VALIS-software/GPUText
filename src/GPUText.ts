@@ -133,6 +133,10 @@ class GPUText {
 			const item = glyphLayout.sequence[i];
 			const font = glyphLayout.font;
 			const fontCharacter = font.characters[item.char];
+
+			// skip null-glyphs
+			if (fontCharacter == null || fontCharacter.glyph == null) continue;
+			
 			const glyph = fontCharacter.glyph;
 
 			// quad dimensions
@@ -227,7 +231,7 @@ class GPUText {
 
 			characters: {},
 			kerning: {},
-			glyphBounds: null,
+			glyphBounds: undefined,
 
 			textures: [],
 			textureSize: header.textureSize,
@@ -244,26 +248,26 @@ class GPUText {
 			let char = header.charList[i];
 			let b0 = i * characterBlockLength_bytes;
 
-			let characterData: TextureAtlasCharacter = {
-				advance: characterDataView.getFloat32(b0 + 0, littleEndian),
-				glyph: {
-					atlasRect: {
-						x: characterDataView.getUint16(b0 + 4, littleEndian),
-						y: characterDataView.getUint16(b0 + 6, littleEndian),
-						w: characterDataView.getUint16(b0 + 8, littleEndian),
-						h: characterDataView.getUint16(b0 + 10, littleEndian),
-					},
-					atlasScale: characterDataView.getFloat32(b0 + 12, littleEndian),
-					offset: {
-						x: characterDataView.getFloat32(b0 + 16, littleEndian),
-						y: characterDataView.getFloat32(b0 + 20, littleEndian),
-					}
+			let glyph = {
+				atlasRect: {
+					x: characterDataView.getUint16(b0 + 4, littleEndian),
+					y: characterDataView.getUint16(b0 + 6, littleEndian),
+					w: characterDataView.getUint16(b0 + 8, littleEndian),
+					h: characterDataView.getUint16(b0 + 10, littleEndian),
+				},
+				atlasScale: characterDataView.getFloat32(b0 + 12, littleEndian),
+				offset: {
+					x: characterDataView.getFloat32(b0 + 16, littleEndian),
+					y: characterDataView.getFloat32(b0 + 20, littleEndian),
 				}
 			}
 
 			// A glyph with 0 size is considered to be a null-glyph
-			if (characterData.glyph.atlasRect.w === 0 || characterData.glyph.atlasRect.h === 0) {
-				characterData.glyph = null;
+			let isNullGlyph = glyph.atlasRect.w === 0 || glyph.atlasRect.h === 0;
+
+			let characterData: TextureAtlasCharacter = {
+				advance: characterDataView.getFloat32(b0 + 0, littleEndian),
+				glyph: isNullGlyph ? undefined : glyph
 			}
 
 			gpuTextFont.characters[char] = characterData;
