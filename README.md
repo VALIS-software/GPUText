@@ -4,7 +4,14 @@ Engine agnostic GPU text rendering
 
 [Demo](https://valis-software.github.io/GPU-Text/example)
 
-## Font Atlas Generator
+# Building /dist
+
+```
+npm install
+npm run build
+```
+
+## GPU Text Font Generator
 ##### Usage
 ```
 ['--charset'] <path>              : Path of file containing character set
@@ -24,7 +31,7 @@ _ <path>                          : Path of TrueType font file (.ttf)
 
 ##### Example
 ```
-> node font-atlas.js source-fonts/OpenSans/OpenSans-Regular.ttf --binary true
+> node generate.js source-fonts/OpenSans/OpenSans-Regular.ttf --binary true
 ```
 
 ##### Building
@@ -45,6 +52,7 @@ haxe build.hxml
 
 ## Release Todos
 - npm-ify the library
+- prebuilt msdfgen for windows
 - Complex layout demo
 	- Text of different fonts within a single layout
 - Document public methods
