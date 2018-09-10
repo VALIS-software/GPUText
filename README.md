@@ -51,7 +51,6 @@ haxe build.hxml
 ```
 
 ## Release Todos
-- npm-ify the library
 - prebuilt msdfgen for windows
 - Complex layout demo
 	- Text of different fonts within a single layout
@@ -59,5 +58,6 @@ haxe build.hxml
 - Manually generate signed distance atlas mipmaps (this improves quality at low font sizes)
 	- Store mipmap level in alpha and use to offset uvs to precise pixel coords
 - Support 3D anti-aliasing
-- Test with other libraries like three.js
+- Create examples for other libraries
+	- three.js
 - Binary format
