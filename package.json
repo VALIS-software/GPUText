@@ -6,9 +6,7 @@
   "directories": {
     "example": "example"
   },
-  "bin": {
-    "gputext": "generate/generate.js"
-  },
+  "bin": "./cli.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
