@@ -181,7 +181,6 @@ class Main {
 
 	static var technique:TextureFontTechnique = MSDF;
 
-	static var prebuiltBinariesDir = 'prebuilt';
 	static var msdfgenPath = 'prebuilt/msdfgen'; // search at runtime
 	static var charsetPath = 'charsets/ascii.txt';
 	static var localTmpDir = '__glyph-cache';
@@ -207,11 +206,12 @@ class Main {
 		Console.errorPrefix = '<b><red>></b> ';
 		Console.warnPrefix = '<b><yellow>></b> ';
 
-		// search for msdfgen binary
+		// search for msdfgen binary, relative to the program
 		var msdfBinaryName = Sys.systemName() == 'Windows' ? 'msdfgen.exe' : 'msdfgen';
 		var msdfSearchDirectories = ['.', 'msdfgen', 'prebuilt'];
+		var programDirectory = haxe.io.Path.directory(Sys.programPath());
 		for (dir in msdfSearchDirectories) {
-			var path = haxe.io.Path.join([dir, msdfBinaryName]);
+			var path = haxe.io.Path.join([programDirectory, dir, msdfBinaryName]);
 			if (sys.FileSystem.exists(path) && !sys.FileSystem.isDirectory(path)) {
 				msdfgenPath = path;
 				break;
@@ -220,6 +220,20 @@ class Main {
 
 		var showHelp = false;
 		var argHandler = hxargs.Args.generate([
+			@doc('Path of TrueType font file (.ttf)')
+			_ => (path: String) -> {
+				// catch any common aliases for help
+				if (path.charAt(0) == '-') {
+					if (['-help', '-h', '-?'].indexOf(path) != -1) {
+						showHelp = true;
+					} else {
+						throw 'Unrecognized argument <b>"$path"</b>';
+					}
+				}
+				// assume it's a ttf path
+				sourceTtfPaths.push(path);
+			},
+
 			@doc('Path of file containing character set')
 			['--charset'] => (path: String) -> charsetPath = path,
 
@@ -259,24 +273,10 @@ class Main {
 			['--help'] => () -> {
 				showHelp = true;
 			},
-
-			@doc('Path of TrueType font file (.ttf)')
-			_ => (path: String) -> {
-				// catch any common aliases for help
-				if (path.charAt(0) == '-') {
-					if (['-help', '-h', '-?'].indexOf(path) != -1) {
-						showHelp = true;
-					} else {
-						throw 'Unrecognized argument <b>"$path"</b>';
-					}
-				}
-				// assume it's a ttf path
-				sourceTtfPaths.push(path);
-			}
 		]);
 
 		function printUsage() {
-			Console.printlnFormatted('<b>Usage:</b>\n');
+			Console.printlnFormatted('<b>Usage:</b> <TrueType font path> [options]\n');
 			Console.print(argHandler.getDoc());
 			Console.println('');
 			Console.println('');
