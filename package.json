@@ -1,7 +1,7 @@
 {
   "name": "gputext",
   "version": "1.0.0",
-  "description": "Engine-agnostic GPU text system (dependency free)",
+  "description": "Lightweight engine-agnostic GPU text system (dependency free)",
   "main": "./dist/GPUText.js",
   "types": "./dist/GPUText.d.ts",
   "directories": {
@@ -9,7 +9,7 @@
   },
   "bin": "./cli.js",
   "scripts": {
-    "build": "tsc",
+    "dist": "tsc && uglifyjs dist/GPUText.js --compress --mangle -o dist/GPUText.min.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -31,6 +31,7 @@
   },
   "homepage": "https://github.com/VALIS-software/GPUText#readme",
   "devDependencies": {
-    "typescript": "^2.9.1"
+    "typescript": "^2.9.1",
+    "uglify-js": "^3.4.9"
   }
 }
