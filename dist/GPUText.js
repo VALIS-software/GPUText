@@ -280,3 +280,7 @@ var GPUText = /** @class */ (function () {
     return GPUText;
 }());
 exports.default = GPUText;
+if (typeof window !== 'undefined') {
+    // expose GPUText on the window object
+    window.GPUText = GPUText;
+}

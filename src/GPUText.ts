@@ -446,3 +446,8 @@ interface GPUTextFontHeader extends GPUTextFontBase {
 }
 
 export default GPUText;
+
+if (typeof window !== 'undefined') {
+	// expose GPUText on the window object
+	(window as any).GPUText = GPUText;
+}

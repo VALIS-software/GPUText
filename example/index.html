@@ -101,7 +101,10 @@
 
 	</div>
 
-	<script src="../gputext.js"></script>
+	<!-- create a global exports object for commonjs modules to use -->
+	<script>window.exports = {};</script>
+
+	<script src="../dist/GPUText.js"></script>
 	<script src="gputext-webgl.js"></script>
 
 	<script>
