@@ -2,7 +2,7 @@
 
 Engine agnostic GPU text rendering
 
-[Demo](https://valis-software.github.io/GPU-Text/example)
+[Demo](https://valis-software.github.io/GPUText/example)
 
 # Building /dist
 
