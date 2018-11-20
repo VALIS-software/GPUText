@@ -29,9 +29,10 @@ npm run build
 _ <path>                          : Path of TrueType font file (.ttf)
 ```
 
-##### Example
+##### Example Font Generation
+Checkout this repo
 ```
-> node generate.js source-fonts/OpenSans/OpenSans-Regular.ttf --binary true
+> ./cli.js source-fonts/OpenSans/OpenSans-Regular.ttf --binary true
 ```
 
 ##### Building
@@ -60,4 +61,3 @@ haxe build.hxml
 - Support 3D anti-aliasing
 - Create examples for other libraries
 	- three.js
-- Binary format
