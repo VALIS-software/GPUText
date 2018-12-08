@@ -109,6 +109,7 @@
 
 	<script>
 		"use strict";
+		let testText = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.';
 		let canvas = document.querySelector('canvas');
 
 		function fitCanvas() {
@@ -130,9 +131,6 @@
 		console.log('WebGL via ' + glRenderer);
 
 		// app state
-		let textBuffer = null;
-		let glyphAtlasTexture = null;
-
 		let textTransform = new Float32Array([
 			1.0, 0.0, 0.0, 0.0,
 			0.0, 1.0, 0.0, 0.0,
@@ -146,30 +144,74 @@
 		try {msdfProgram = GPUTextWebGL.createTextProgram(gl, {});}
 		catch (e) {logError(e);}
 
-		let fontName = 'OpenSans-Regular';
 		// load font and generate text buffer
 		let font = null;
-		fetch(`${fontName}.json`)
-			.then((response) => {
-				if (response.status != 200) {
-					throw `HTTP Response "${response.status} ${response.statusText}" for ${response.url}`;
-				} else {
-					return response.json();
-				}
-			})
-			.then((json) => {
-				font = json;
-				var layout = GPUText.layout('Lorem ipsum dolor sit amet, consectetur adipiscing elit.', font);
-				textBuffer = GPUTextWebGL.createTextBuffer(gl, GPUText.generateVertexData(layout));
-				console.log('Created text buffer', layout, textBuffer);
-			})
-			.catch(logError);
+		let textBuffer = null;
+		let glyphAtlasTexture = null;
 
-		let image = new Image();
-		image.addEventListener('load', function(e) {
-			glyphAtlasTexture = GPUTextWebGL.createGlyphAtlas(gl, image);
-		});
-		image.src = `${fontName}-0.png`;
+		loadFont('OpenSans-Regular.msdf.bin')
+		// loadFont('OpenSans-Regular.json')
+			.then((obj) => {
+				console.log(obj);
+				font = obj.font;
+				textBuffer = obj.textBuffer;
+				glyphAtlasTexture = obj.glyphAtlasTexture;
+			});
+
+		function loadFont(path) {
+			let ext = path.split('.').pop().toLowerCase();
+			return fetch(path)
+				.then(validateFetchResponse)
+				.then((response) => {
+					if (response.headers.get('content-type').indexOf('json') !== -1) {
+						return response.json();
+					} else {
+						return response.arrayBuffer().then(GPUText.parse);
+					}
+				})
+				.then(processGPUTextFont)
+				.catch(logError);
+		}
+
+		function validateFetchResponse(response) {
+			if (response.status != 200) {
+				throw `HTTP Response "${response.status} ${response.statusText}" for ${response.url}`;
+			} else {
+				return response;
+			}
+		}
+
+		function processGPUTextFont(gpuTextFont) {
+			var layout = GPUText.layout(testText, gpuTextFont);
+			let textBuffer = GPUTextWebGL.createTextBuffer(gl, GPUText.generateVertexData(layout));
+
+			// assume a single texture with a single mip level
+			let textureResource = gpuTextFont.textures[0][0];
+			let htmlImageElement = null;
+
+			if (textureResource instanceof HTMLImageElement) {
+				// texture data is embedded into the font object and parsed into a HTMLImageElement
+				htmlImageElement = textureResource;
+			} else {
+				// texture is a remote reference
+				htmlImageElement = new Image();
+				htmlImageElement.src = textureResource.localPath;
+			}
+
+			return new Promise((resolve, reject) => {
+				htmlImageElement.addEventListener('load', () => {
+					let glyphAtlasTexture = GPUTextWebGL.createGlyphAtlas(gl, htmlImageElement);
+					resolve({
+						font: gpuTextFont,
+						textBuffer: textBuffer,
+						glyphAtlasTexture: glyphAtlasTexture
+					});
+				});
+				htmlImageElement.addEventListener('error', (e) => {
+					reject(e);
+				});
+			});
+		}
 
 		// debug shader
 		let msdfDebugProgram = GPUTextWebGL.createTextProgram(
