@@ -24,7 +24,7 @@ npm run build
 ['--max-texture-size'] <size>     : Sets the maximum dimension of the texture atlas
 ['--bounds'] <enabled>            : Enables storing glyph bounding boxes in the font (default false)
 ['--binary'] <enabled>            : Saves the font in the binary format (experimental; default false)
-['--external-textures'] <enabled> : When store textures externally when saving in the binary format
+['--external-textures'] <enabled> : Store textures externally when saving in the binary format
 ['--help']                        : Shows this help
 _ <path>                          : Path of TrueType font file (.ttf)
 ```

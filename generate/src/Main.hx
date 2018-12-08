@@ -265,7 +265,7 @@ class Main {
 			@doc('Saves the font in the binary format (default true)')
 			['--binary'] => (enabled: Bool) -> saveBinary = enabled,
 
-			@doc('When store textures externally when saving in the binary format')
+			@doc('Store textures externally when saving in the binary format')
 			['--external-textures'] => (enabled: Bool) -> externalTextures = enabled,
 
 			// misc
