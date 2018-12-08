@@ -1,1 +1,1 @@
-node generate.js source-fonts/OpenSans/OpenSans-Regular.ttf --binary true
+node generate.js source-fonts/OpenSans/OpenSans-Regular.ttf --binary true --charset charsets/example.txt
