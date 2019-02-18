@@ -72,11 +72,27 @@ const GPUTextWebGL = (function(){
 						float sigDist = median(sample.r, sample.g, sample.b);
 
 						// spread field range over 1px for antialiasing
-						sigDist = clamp((sigDist - 0.5) * vFieldRangeDisplay_px + 0.5, 0.0, 1.0);
+						float fillAlpha = clamp((sigDist - 0.5) * vFieldRangeDisplay_px + 0.5, 0.0, 1.0);
 
-						float alpha = sigDist;
-
-						gl_FragColor = color * alpha;
+						vec4 strokeColor = vec4(0.0, 1.0, 0.0, 0.0);
+						float strokeWidthPx = 1.0;
+						float strokeDistThreshold = clamp(strokeWidthPx * 2. / vFieldRangeDisplay_px, 0.0, 1.0);
+						float strokeDistScale = 1. / (1.0 - strokeDistThreshold);
+						float _offset = 0.5 / strokeDistScale;
+						float strokeAlpha = clamp((sigDist - _offset) * vFieldRangeDisplay_px + _offset, 0.0, 1.0);
+						
+						gl_FragColor = (
+							color * fillAlpha * color.a
+							+ strokeColor * strokeColor.a * strokeAlpha * (1.0 - fillAlpha)
+						);
+						
+						// to help debug stroke
+						/**
+						gl_FragColor =
+							 vec4(vec3(sigDist), 0.) + strokeColor * strokeColor.a * strokeAlpha
+							 // * (1.0 - fillAlpha)
+						;
+						/**/
 					}
 				`,
 				vertexAttribute: {
@@ -86,11 +102,7 @@ const GPUTextWebGL = (function(){
 					},
 					uv: {
 						name: 'uv',
-						type: 'vec2',
-					},
-					atlasScale: {
-						name: 'atlasScale',
-						type: 'float',
+						type: 'vec3',
 					}
 				},
 				uniform: {
