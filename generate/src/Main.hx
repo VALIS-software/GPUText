@@ -194,6 +194,7 @@ class Main {
 	static var storeBounds = false;
 	static var saveBinary = true;
 	static var externalTextures = false;
+	static var preserveTmp = false;
 
 	static var whitespaceCharacters = [
 		' ', '\t'
@@ -267,6 +268,9 @@ class Main {
 
 			@doc('Store textures externally when saving in the binary format')
 			['--external-textures'] => (enabled: Bool) -> externalTextures = enabled,
+
+			@doc('Preserves any temporary files generated (default false)')
+			['--preserve-tmp'] => () -> preserveTmp = true,
 
 			// misc
 			@doc('Shows this help')
@@ -360,7 +364,7 @@ class Main {
 			for (char in charList) {
 				var charCode = char.charCodeAt(0);
 				var e = Sys.command(
-					'$msdfgenPath -font $ttfPath $charCode -size $size_px $size_px -printmetrics -pxrange $fieldRange_px -autoframe -o "${imagePath(charCode)}"> "${metricsPath(charCode)}"'
+					'$msdfgenPath msdf -autoframe -font $ttfPath $charCode -size $size_px $size_px -printmetrics -pxrange $fieldRange_px -o "${imagePath(charCode)}"> "${metricsPath(charCode)}"'
 				);
 				if (e != 0) {
 					Console.error('$msdfgenPath exited with code $e');
@@ -371,15 +375,17 @@ class Main {
 
 			Console.log('Reading glyph metrics');
 
+			inline function norm(x: Float) return normalizeFUnits((x * suToFUnits));
+
 			var atlasCharacters = new haxe.DynamicAccess<TextureAtlasCharacter>();
 			// initialize each character
 			for (char in charList) {
 				atlasCharacters.set(char, {
 					advance: 1,
 					glyph: {
-						atlasScale: 0,
+						atlasScale: suToFUnits,
 						atlasRect: null,
-						offset: null,
+						offset: {x: 0, y: 0},
 					}
 				});
 			}
@@ -401,7 +407,6 @@ class Main {
 
 					// multiply all values by a conversion factor from msdfgen to recover font's original values in FUnits
 					// divide all values by the number of FUnits that make up one side of the 'em' square to get normalized values
-					inline function norm(x: Float) return normalizeFUnits((x * suToFUnits));
 
 					switch name {
 						case 'advance':
@@ -501,12 +506,14 @@ class Main {
 				}
 			}
 
-			Console.log('Deleting glyph cache');
-			var tmpFiles = sys.FileSystem.readDirectory(localTmpDir);
-			for (name in tmpFiles) {
-				try sys.FileSystem.deleteFile(haxe.io.Path.join([localTmpDir, name])) catch(e:Any) {}
+			if (!preserveTmp) {
+				Console.log('Deleting glyph cache');
+				var tmpFiles = sys.FileSystem.readDirectory(localTmpDir);
+				for (name in tmpFiles) {
+					try sys.FileSystem.deleteFile(haxe.io.Path.join([localTmpDir, name])) catch(e:Any) {}
+				}
+				sys.FileSystem.deleteDirectory(localTmpDir);
 			}
-			sys.FileSystem.deleteDirectory(localTmpDir);
 
 			// build png atlas bytes
 			var textureFileName = '$fontFileName-0.png';
