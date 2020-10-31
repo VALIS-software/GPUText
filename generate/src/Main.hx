@@ -182,7 +182,7 @@ class Main {
 	static var technique:TextureFontTechnique = MSDF;
 
 	static var msdfgenPath = 'prebuilt/msdfgen'; // search at runtime
-	static var charsetPath = 'charsets/ascii.txt';
+	static var charsetPath: Null<String> = null;
 	static var localTmpDir = '__glyph-cache';
 	static var fontOutputDirectory = '';
 
@@ -311,7 +311,10 @@ class Main {
 			}
 
 			if (charList == null) {
-				charList = sys.io.File.getContent(charsetPath).split('');
+				charList = if (charsetPath == null) {
+					Console.warn("No charset supplied, using ASCII charset by default, add --charset {path-to-txt-file} to specify which characters the generated font should");
+					'	 !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~'.split('');
+				} else sys.io.File.getContent(charsetPath).split('');
 			}
 
 			switch technique {
