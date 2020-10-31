@@ -2,7 +2,6 @@
 -main Main
 -cp src
 
--lib console.hx:0.2.3
 -lib hxargs:3.0.2
 -lib format:3.4.0
 -lib pako:git:https://github.com/azrafe7/hxPako.git#8cf5ac46e79a3cce14d349e840916d3857aee45d
